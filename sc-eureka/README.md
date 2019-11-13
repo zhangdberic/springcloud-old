@@ -71,5 +71,9 @@ docker run -itd --cap-add=SYS_PTRACE --name sc-eureka2 --net host -e JAVA_OPTS="
 
 ![eureka1](https://github.com/zhangdberic/springcloud/blob/master/sc-eureka/doc/eureka-ha2.png)
 
+![eureka2](https://github.com/zhangdberic/springcloud/blob/master/sc-eureka/doc/eureka-ha1.png)
+
+**注意：DS Replicas是对方主机名(对应eureka.instance.hostname)，registered-replicas和availabel-replicas都是对方主机的eureka注册链接。**
+
 
 
