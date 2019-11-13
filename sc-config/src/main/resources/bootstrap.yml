@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: sc-config # 应用名称
+  cloud:
+    config:
+      server:
+        encrypt:
+          enabled: false # 直接返回密文，而并非解密后的原文(需要客户端解密)
+encrypt:
+  key: it7CegZs-xxRfYpU # 配置文件加密秘钥

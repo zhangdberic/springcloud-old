@@ -1,0 +1,69 @@
+# 公有属性
+# 指定默认的环境(默认开发环境)
+spring:
+  profiles:
+    active: dev
+# 开启安全认证    
+security:
+  basic:
+    enabled: true
+  user:
+    name: sc-config
+    password: veDSJeUX-JSxkWrk
+         
+# 开发环境    
+---
+server:
+  port: 8080
+spring:
+  profiles: dev
+  cloud:
+    config:
+      server:
+        git:
+          # Spring Cloud Config配置中心使用gitlab的话，要在仓库后面加后缀.git，而GitHub不需要
+          uri: https://github.com/zhangdberic/config-repo.git
+          search-paths: /**
+          # 因为github的账户和密码不能泄露,因此需要在启动脚本中加入--spring.cloud.config.server.git.username=xxxx --spring.cloud.config.server.git.password=xxxx 
+          username: zhangdb
+          password: 12345678
+  # 和spring-cloud-starter-bus-amqp配合,用于/bus/refresh分布式服务属性刷新.
+  # 调用/bus/refresh,则刷新所有监听到本队列上的服务属性配置.
+  # 调用/bus/refresh?destination={application}:**,则刷新监听到本队列上的某个服务(应用)属性配置.
+  # 调用/bus/refresh?destination={application}:{instanceid},则只刷新监听到本队列上的某个服务(应用)的某个实例属性配置(用集群环境下的灰度发布).
+  # 客户端为了支持/bus/refresh也需要在pom.xml中引入spring-cloud-starter-bus-amqp,并且在应用的git中(service-dev.yml)加上如下的队列配置.
+  rabbitmq:
+    host: 192.168.5.29
+    port: 5672
+    username: admin
+    password: Rabbitmq-401                    
+# 测试环境          
+---
+server:
+  port: 8081
+spring:
+  profiles: test
+  cloud:
+    config:
+      server:
+        git:
+          # Spring Cloud Config配置中心使用gitlab的话，要在仓库后面加后缀.git，而GitHub不需要
+          uri: http://192.168.5.252:81/zhangdb/config-repo.git
+          search-paths: /**
+          username: zhangdb
+          password: 12345678
+# 生产环境          
+---
+server:
+  port: 8082
+spring:
+  profiles: prod
+  cloud:
+    config:
+      server:
+        git:
+          # Spring Cloud Config配置中心使用gitlab的话，要在仓库后面加后缀.git，而GitHub不需要
+          uri: http://192.168.5.252:81/zhangdb/config-repo.git
+          search-paths: /**
+          username: zhangdb
+          password: 12345678       
