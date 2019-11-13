@@ -44,12 +44,11 @@ gitlabs也基于HA方式，也可以安装到spring cloud config docker的宿主
 
 
 
+## docker启动脚本
+
+docker run -itd --cap-add=SYS_PTRACE --name sc-config1 --net host -e JAVA_OPTS="-Xms100m -Xmx100m -Xmn30m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC" -e APP_ENV="--spring.profiles.active=dev --spring.cloud.config.server.git.username=xxxx--spring.cloud.config.server.git.password=yyyy" dyit.com:5000/sc/sc-config:1.0.1
 
 
 
 
 
-
-
-
-也就是说，是程序启动先从spring.cloud.config.*中加载eureka的配置，还是先从eureka中查找springcloudconfig的服务，然后在加载配置。第1种：需要写死 eureka.client.service-url.defaultZone配置，而且eureka项目不能支持spring cloud config，eureka的application.yml配置要写到本地。而且第1种：需要在bootstrap.yml中写死spring.cloud.config.uri，
