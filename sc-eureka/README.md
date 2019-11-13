@@ -14,7 +14,7 @@ bootstrap.yml应该只放在当前profile、应用名称，基本的远程配置
 
 application.yml应配置到config git上，其应该由sc-eureka-default.yml和sc-eureka-{profile}.yml两个文件组成，例如开发环境：config-repo/sc-eureka/sc-eureka.yml和config-repo/sc-eureka/sc-eureka-dev.yml
 
-[application.yml]()
+[sc-eureka-dev.yml]( https://github.com/zhangdberic/config-repo/blob/master/sc-eureka/sc-eureka-dev.yml )
 
 ```yml
 server:
