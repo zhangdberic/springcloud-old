@@ -32,12 +32,12 @@ public class RibbonLoadBalancedTestController {
 
 	@GetMapping("/user/{id}")
 	public User findById(@PathVariable Long id) {
-		return this.restTemplate.getForObject("http://SC-SAMPLESERVICE/{id}", User.class, id);
+		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
 	}
 
 	@GetMapping(value="/log-user-instance",produces="text/plant;charset=utf-8")
 	public String logUserInstance() {
-		ServiceInstance serviceInstance = this.loadBalancerClient.choose("SC-SAMPLESERVICE");
+		ServiceInstance serviceInstance = this.loadBalancerClient.choose("sc-sampleservice");
 		String balancerInfo = "serviceId:"+serviceInstance.getServiceId()+", target "+serviceInstance.getHost()+":"+serviceInstance.getPort();
 		logger.info("{}:{}:{}", serviceInstance.getServiceId(), serviceInstance.getHost(), serviceInstance.getPort());
 		return balancerInfo;

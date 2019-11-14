@@ -50,5 +50,25 @@ docker run -itd --cap-add=SYS_PTRACE --name sc-config1 --net host -e JAVA_OPTS="
 
 
 
+## 测试spring cloud config
+
+
+
+### 测试bus属性刷新(/bus/refresh)
+
+发送请求到config，刷新sc-config-test服务属性。
+
+测试URL：http://192.168.5.78:8080/bus/refresh?destination=sc-config-test:**   ，POST请求，Basic认证的用户名和密码为： sc-config: veDSJeUX-JSxkWrk 。
+
+可以是postMan来测试，也可以使用firefox的 RESTClient插件来测试。
+
+
+
+
+
+
+
+
+
 
 
