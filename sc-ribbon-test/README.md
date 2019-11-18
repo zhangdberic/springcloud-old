@@ -4,7 +4,7 @@
 
 
 
-## @LoadBalanced修饰的RestTemplate
+## 使用LoadBalanced实现ribbon
 
 ribbon支持很简单，就是在RestTemplate加上@LoadBalanced源注释。然后改变restTemplate的调用uri参数，这个uri参数在ribbon支持下意义已经变了，其uri的主机和端口部分对应的请求的服务名，例如：
 
@@ -12,7 +12,48 @@ ribbon支持很简单，就是在RestTemplate加上@LoadBalanced源注释。然�
 
 
 
-其提供的URI：
+使用ribbon支持的RestTemplate
+
+```java
+	@Bean
+	@LoadBalanced
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
+	}
+```
+
+看这个@LoadBalanced的声明。
+
+
+
+spring引用这个RestTemplate实例
+
+```java
+@RestController
+public class RibbonLoadBalancedTestController {
+
+	private static final Logger logger = LoggerFactory.getLogger(RibbonLoadBalancedTestController.class);
+
+	@Autowired
+	private RestTemplate restTemplate;
+
+	@Autowired
+	private LoadBalancerClient loadBalancerClient;
+
+	@GetMapping("/user/{id}")
+	public User findById(@PathVariable Long id) {
+		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+	}
+}    
+```
+
+这里的restTemplate实例已经是ribbon修饰过期的RestTemplate对象了。
+
+this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);，注意这里的host部分已经被调用的服务名(**sc-sampleservice**)替换了。
+
+
+
+### 测试ribbon的url
 
 http://192.168.5.78:8003/user/1，其会基于@LoadBalanced修饰的RestTemplate来调用sc-sampleservice服务，获取一个User信息。
 
@@ -143,11 +184,33 @@ sc-sampleservice:
       
 ```
 
-测试方法，部署两个sc-sampleservice实例，浏览器发送请求：http://192.168.5.31:8003/user/1?sleep=3001到sc-ribbon-test服务，sc-ribbon-test负载均衡调用sc-sampleservice实例，因为ReadTimeout设置为3000，而请求的延时设置为3001一定会报错，从而测试请求重试。观察sc-sampleservice的日志输出，明显看到一个实例执行了两次，两个实例都执行到了，也就是说sc-samplservice一共接收到了4个请求。充分的证明了上面的配置正确性。
+测试方法，部署两个sc-sampleservice实例，浏览器发送请求：http://192.168.5.31:8003/user/1?sleep=3001到sc-ribbon-test服务，sc-ribbon-test负载均衡调用sc-sampleservice实例，因为ReadTimeout设置为3000，而请求的延时设置为3001一定会报错，从而测试请求重试。观察sc-sampleservice的日志输出，明显看到一个实例执行了两次，两个实例都执行到了，也就是说sc-samplservice一共接收到了4个请求。
 
 流程：http://192.168.5.31:8003/user/1?sleep=3001请求发送到实例1，实例1超时报错，再重试实例1，实例1再超时报错。然后自动重试实例2，超时报错，自动再重试实例2。日志输出http://192.168.5.31:8003/user/1?sleep=3001请求耗时是12488 mills，正好是4个请求(1个正常请求，3个重试)的执行耗时。
 
 
+
+测试方法：去掉MaxAutoRetries或MaxAutoRetriesNextServer配置(**默认配置**)，或配置MaxAutoRetries: 0，MaxAutoRetriesNextServer: 1，两者都是一样的。
+
+测试方法，部署两个sc-sampleservice实例，浏览器发送请求：http://192.168.5.31:8003/user/1?sleep=3001到sc-ribbon-test服务，sc-ribbon-test负载均衡调用sc-sampleservice实例，因为ReadTimeout设置为3000，而请求的延时设置为3001一定会报错，从而测试请求重试。观察sc-sampleservice的日志输出，明显看到一个实例执行了1次，两个实例都执行到了，也就是说sc-samplservice一共接收到了2个请求。
+
+```yml
+# 1.配置某个服务的ribbon属性
+sc-sampleservice:
+  ribbon:
+    # 同一个实例最大重试测试，不包括首次调用
+    MaxAutoRetries: 0
+    # 重试其它实例的最大次数(例如:部署了同一个服务3个实例,此处应该设置为2）,不包括首次调用所选的实例
+    MaxAutoRetriesNextServer: 1
+    
+    restclient: 
+      enabled: true
+    # 读取超时时间设置(毫秒)
+    ReadTimeout: 3000
+    ConnectTimeout: 1000      
+```
+
+流程：http://192.168.5.31:8003/user/1?sleep=3001请求发送到实例1，实例1超时报错，因为MaxAutoRetries=0实例1不再重试。然后自动重试实例2，因为MaxAutoRetriesNextServer=1，超时报错。日志输出http://192.168.5.31:8003/user/1?sleep=3001请求耗时是6312 mills，正好是2个请求(1个正常请求，1个重试)的执行耗时。
 
 #### 测试禁用某个服务的ribbon重试
 

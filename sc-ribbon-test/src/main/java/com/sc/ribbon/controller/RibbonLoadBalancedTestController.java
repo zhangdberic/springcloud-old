@@ -35,6 +35,11 @@ public class RibbonLoadBalancedTestController {
 	@Autowired
 	private LoadBalancerClient loadBalancerClient;
 
+	@GetMapping("/user/{id}")
+	public User findById(@PathVariable Long id) {
+		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+	}
+	
 	@GetMapping(value = "/user/{id}", params = "sleep")
 	public User findByIdWithSleep(@PathVariable Long id, @RequestParam(value = "sleep", required = false, defaultValue = "0") Long sleep) throws IOException {
 		long beginTime = System.currentTimeMillis();
@@ -44,11 +49,6 @@ public class RibbonLoadBalancedTestController {
 		} finally {
 			logger.info("findByIdWithSleep spend[{}]mills.", System.currentTimeMillis() - beginTime);
 		}
-	}
-
-	@GetMapping("/user/{id}")
-	public User findById(@PathVariable Long id) {
-		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
 	}
 
 	@PostMapping(value = "/", produces = "application/json;charset=UTF-8")
