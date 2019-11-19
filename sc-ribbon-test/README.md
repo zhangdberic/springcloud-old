@@ -85,6 +85,16 @@ ribbon.x，如果省略了前面的<clientName>则为全局配置。
 
 ## 测试ribbon
 
+### 设置ribbon使用apache http客户端
+
+```yml
+ribbon: 
+  restclient:
+    enabled: true
+```
+
+ribbon默认的情况下使用的jdk自带的http客户端，其有很多问题，例如：ribbon.ReadTimeout设置无效，建议使用上面的配置，修改为使用apache http客户端。
+
 ### 测试ribbon默认配置
 
 启动一个sc-sampleservice服务(其会注册到eureka上)，浏览器发送请求到sc-ribbon-test服务(http://192.168.5.78:8003/user/1)，@LoadBalanced修饰的RestTemplate来调用sc-sampleservice服务。
