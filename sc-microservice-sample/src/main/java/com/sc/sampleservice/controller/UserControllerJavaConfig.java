@@ -12,15 +12,21 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.util.ContentCachingResponseWrapper;
-
+/**
+ * 如需要测试响应压缩则可以开启本类
+ * @author zhangdb
+ *
+ */
 @Configuration
 public class UserControllerJavaConfig {
 
 	@Bean
+	@ConditionalOnProperty(value="server.response.content-length",matchIfMissing=false)
 	public FilterRegistrationBean filterRegistrationBean() {
 		FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
 		filterRegistrationBean.setFilter(new Filter() {
@@ -40,8 +46,10 @@ public class UserControllerJavaConfig {
 			}
 		});
 		List<String> urls = new ArrayList<String>();
-		urls.add("/users");
+		urls.add("/*");
 		filterRegistrationBean.setUrlPatterns(urls);
+		filterRegistrationBean.setName("response-content-length");
+		filterRegistrationBean.setOrder(1);
 		return filterRegistrationBean;
 	}
 
