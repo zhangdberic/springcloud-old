@@ -67,11 +67,68 @@ public class FeignTestApplication {
 
 ## 测试feign的url
 
-浏览器发送请求http://192.168.5.78:8005/user/1，来验证是否能正确的调用sc-sampleservice服务。
+浏览器发送GET请求http://192.168.5.78:8005/user/1，来验证是否能正确的调用sc-sampleservice服务。
 
-浏览器发送请求http://192.168.5.78:8005/user/1?sleep=xxx，来验证是否能正确的调用sc-sampleservice的延时服务，一般应用测试读超时等。
+浏览器发送GET请求http://192.168.5.78:8005/user/1?sleep=xxx，来验证是否能正确的调用sc-sampleservice的延时服务，一般应用测试读超时等。
 
-浏览器发送请求http://192.168.5.78:8005/users?num=xxx，来验证大批量返回数据，例如：验证响应压缩配置等。
+浏览器发送GET请求http://192.168.5.78:8005/users?num=xxx，来验证大批量返回数据，例如：验证响应压缩配置等。
+
+PostMan发送POST请求http://192.168.5.78:8005/add_users，来验证大批量请求数据，例如：验证请求压缩配置。
+
+请求数据格式为json如下：
+
+```json
+[
+    {
+        "id": 19,
+        "username": "account1",
+        "name": "张三",
+        "age": 20,
+        "balance": 100
+    },
+    {
+        "id": 19,
+        "username": "account1",
+        "name": "张三",
+        "age": 20,
+        "balance": 100
+    }
+
+]
+```
+
+PostMan发送POST请求http://192.168.5.78:8005/，增加一个User请求，验证feign的post请求处理。
+
+请求数据格式为json如下：
+
+```json
+    {
+        "id": 19,
+        "username": "account1",
+        "name": "张三",
+        "age": 20,
+        "balance": 100
+    }
+```
+
+PostMan发送Post请求 http://192.168.5.78:8005/uploadFile ，上传一个文件，来验证feign上下文件。
+
+基于PostMan的form-data格式来发送请求，参数的名字为file，选择file(文件)格式参数，value选择一个文件来上传。
+
+如果需要测试大文件上传则要修改sc-feign-test和sc-sampleservice的配置，例如：
+
+```yml
+  spring:
+    multipart: 
+      # 整个请求大小限制(1个请求可能包括多个上传文件)
+      max-request-size: 20MB
+      # 单个文件大小限制
+      file-size-threshold: 10MB 
+```
+
+
+
+
 
 ## feign自定义配置
 
@@ -320,10 +377,35 @@ List<User> findUsers(@RequestParam(value="num",required=false,defaultValue="10")
 这是一个列出User对象的RestController方法，其参数num指定了要列出的记录数。返回值类型List<User>因为是RestController，其**返回值会被序列化为json输出**。json内容是可以被正常序列化输出，**但其基于Transfer-Encoding: chunked方式输出，无Content-Length响应头。**无Content-Length响应头的支持，servlet容器(tomcat)无法判断输出字节数(min-response-size配置项是根据Content-Length来判断的)，因此不管输出字节数多少，即使输出1个字节，也就执行压缩输出(Content-Encoding: gzip)。这显然不合理，我们还需要加入一个自定义的过滤器来正确的输出Content-Length响应头。
 
 ```java
+package com.sc.sampleservice.controller;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.util.ContentCachingResponseWrapper;
+/**
+ * 如需要测试响应压缩则可以开启本类
+ * @author zhangdb
+ *
+ */
 @Configuration
 public class UserControllerJavaConfig {
 
 	@Bean
+	@ConditionalOnProperty(value="server.response.content-length",matchIfMissing=false)
 	public FilterRegistrationBean filterRegistrationBean() {
 		FilterRegistrationBean filterRegistrationBean = new FilterRegistrationBean();
 		filterRegistrationBean.setFilter(new Filter() {
@@ -343,12 +425,29 @@ public class UserControllerJavaConfig {
 			}
 		});
 		List<String> urls = new ArrayList<String>();
-		urls.add("/users");
+		urls.add("/*");
 		filterRegistrationBean.setUrlPatterns(urls);
 		return filterRegistrationBean;
 	}
 
 }
+
+```
+
+```yml
+server:
+  port: 8000
+  # 支持压缩
+  compression:
+    enabled: true
+    mime-types:
+    - text/xml
+    - text/plain
+    - application/xml
+    - application/json
+    min-response-size: 1024
+  response: 
+    content-length: true
 ```
 
 这里重点说明一下ContentCachingResponseWrapper响应对象包装类，其继承了HttpServletResponseWrapper对象，对HttpServletResponse对象进行包装，RestController响应输出数据先暂存到这个包装器的content属性内(FastByteArrayOutputStream content)，在最终输出的时候计算content字节数输出Content-Length响应头。

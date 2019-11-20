@@ -3,11 +3,15 @@ package com.sc.feign.serviceclient;
 import java.util.List;
 
 import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.sc.feign.domain.UploadInfo;
 import com.sc.feign.domain.User;
 
 @FeignClient(name = "sc-sampleservice")
@@ -24,6 +28,12 @@ public interface SampleServiceFeignClient {
 	
 	@RequestMapping(value = "/add_users", method = RequestMethod.POST)
 	List<User> addUsers(List<User> users);
+	
+	@RequestMapping(value = "/", method = RequestMethod.POST)
+	User addUser(User user);
+	
+	@RequestMapping(value="/uploadFile",method=RequestMethod.POST,produces= {MediaType.APPLICATION_JSON_UTF8_VALUE},consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+	UploadInfo handleFileUpload(@RequestPart(value="file") MultipartFile file);
 	
 
 }

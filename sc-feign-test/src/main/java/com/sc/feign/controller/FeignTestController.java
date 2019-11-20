@@ -7,12 +7,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.sc.feign.domain.UploadInfo;
 import com.sc.feign.domain.User;
 import com.sc.feign.serviceclient.SampleServiceFeignClient;
 
@@ -43,6 +47,16 @@ public class FeignTestController {
 		logger.info("param users row num:"+(users==null?0:users.size()));
 		return this.sampleServiceFeignClient.addUsers(users);
 	}
-
+	
+	@RequestMapping(value = "/", method = RequestMethod.POST, consumes="application/json;charset=UTF-8",produces = "application/json;charset=UTF-8")
+	public User addUser(@RequestBody User user) {
+		return this.sampleServiceFeignClient.addUser(user);
+	}
+	
+	@PostMapping(value="/uploadFile", produces = "application/json;charset=UTF-8")
+	public UploadInfo uploadLargeFile(@RequestPart(value="file") MultipartFile file) {
+		return this.sampleServiceFeignClient.handleFileUpload(file);
+	}
+	
 
 }
