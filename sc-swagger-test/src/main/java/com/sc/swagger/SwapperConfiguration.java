@@ -1,0 +1,40 @@
+package com.sc.swagger;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+
+import springfox.documentation.builders.ApiInfoBuilder;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
+import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.Contact;
+import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+@Configuration
+@EnableSwagger2
+public class SwapperConfiguration {
+	
+    @Bean
+    public Docket createRestApi() {
+        return new Docket(DocumentationType.SWAGGER_2)
+                .apiInfo(apiInfo())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.sc.swagger"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+	
+	private ApiInfo apiInfo() {
+        return new ApiInfoBuilder()
+                .title("Spring Boot中使用Swagger2构建RESTful APIs")
+                .description("更多Spring Cloud相关文章请关注：https://github.com/zhangdberic/springcloud/")
+                .termsOfServiceUrl("https://github.com/zhangdberic/")
+                .contact(new Contact("zhangdberic","https://github.com/zhangdberic","909933699@qq.com"))
+                .version("1.0")
+                .build();
+    }
+
+}
