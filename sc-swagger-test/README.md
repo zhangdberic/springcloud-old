@@ -8,7 +8,7 @@
 
  http://localhost:8080/swagger-ui.htm 
 
-
+![](https://github.com/zhangdberic/springcloud/blob/master/sc-swagger-test/doc/swagger2_ui_index.jpg)
 
 # swagger2的api介绍
 
@@ -44,11 +44,11 @@ public class SwapperConfiguration {
 }
 ```
 
-
-
 **apis(RequestHandlerSelectors.basePackage("com.sc.swagger"))**，指定扫描指定包(包含子包)路径下的swapper注释类来生成api文档。
 
-## 2.io.swagger.annotations.Api(@Api)
+[对应主页面的上部分]()
+
+## 2.@Api
 
 ```java
 @Api(tags = "用户相关接口", description = "提供用户相关的 Rest API")
@@ -57,5 +57,9 @@ public class SwapperConfiguration {
 public class UserController {}
 ```
 
-@Api源注释标注一个RestController，对这个RestController进行说明，例如：UserController，标注为用户相关接口。如果不使用@Api标注，则swagger-ui是显示UserController字样。
+@Api源注释标注一个RestController，对整个RestController进行说明，例如：UserController，标注为用户相关接口。如果不使用@Api标注，则swagger-ui是显示UserController字样。
+
+
+
+
 
