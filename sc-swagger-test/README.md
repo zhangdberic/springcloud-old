@@ -116,7 +116,7 @@ public class User {
 }
 ```
 
-**example** 参数示例值，如果参数是一个java基本类型，则需要指定，否则会抛出异常。如果是一个类似于上面的dataType="User"的@ApiModel声明类型，则无需声明example，因为@ApiModel标注的类，本身就会提供example。
+**example** 参数示例值，如果参数是一个java基本类型，则需要指定值，否则会抛出异常。如果是一个类似于上面的dataType="User"的@ApiModel声明类型，则无需声明example，因为@ApiModel标注的类，本身就会提供example。
 
 根据上面的@ApiOperation和@ApiImplicitParam的配置，生成的swagger ui截图：
 
@@ -131,3 +131,79 @@ public class User {
 注意观察，界面上的Example Value，对应RetVal<Long>，包括RetVal内的泛型都可以正确识别（根据方法声明的返回值来生成的)。
 
 ![](https://github.com/zhangdberic/springcloud/blob/master/sc-swagger-test/doc/swagger2_ui_retval.jpg)
+
+```java
+@ApiModel(description = "响应信息")
+public class RetVal<T> {
+	@ApiModelProperty(value = "代码", required = true, example = "200")
+	private String code;
+	@ApiModelProperty(value = "信息", required = true, example = "成功")
+	private String message;
+	@ApiModelProperty
+	private T body;
+}
+```
+
+### @ApiModel
+
+@ApiModel标注的类，用于支撑@ApiImplicitParam或@ApiModelProperty上的dataType指定的值(参数类型或属性类型)的描述。例如：
+
+@ApiImplicitParam(name = "user", value = "用户详细实体user", required = true, dataType = "User")，这里dataType = "User"，指定了User类型，User对应@ApiModel标注的类。其实@ApiModel有一个属性value，其指定了名称，默认不指定就是className，如果按照这个例子，如果我设置@ApiModel(value="user1")，那么@ApiImplicitParam的dataType 属性也要修改为dataType = "user1"，也就是说@ApiImplicitParam.dataType和@ApiModel.value是一一对应的。
+
+```java
+@ApiModel(description = "用户信息")
+public class User {
+	@ApiModelProperty(value = "用户id", required = true, example = "1")
+	private Long id;
+	@ApiModelProperty(value = "登录用户名", required = true, example = "heige")
+	private String username;
+	@ApiModelProperty(value = "用户名称", required = true, example = "黑哥")
+	private String name;
+	@ApiModelProperty(value = "年龄", example = "10", allowableValues = "range[1, 150]")
+	private Integer age;
+	@ApiModelProperty(value = "结余", example = "423.05", allowableValues = "range[0.00, 99999999.99]")
+	private BigDecimal balance;    
+}
+```
+
+根据上面声明例子，Model界面如下：
+
+![](https://github.com/zhangdberic/springcloud/blob/master/sc-swagger-test/doc/swagger2_ui_model.jpg)
+
+### @ApiModelProperty
+
+allowableValues(允许的值范围)属性，这个值不能随便设置，需要查看源码说明，例如：
+
+```java
+    /**
+     * Limits the acceptable values for this parameter.
+     * <p>
+     * There are three ways to describe the allowable values:
+     * <ol>
+     * <li>To set a list of values, provide a comma-separated list.
+     * For example: {@code first, second, third}.</li>
+     * <li>To set a range of values, start the value with "range", and surrounding by square
+     * brackets include the minimum and maximum values, or round brackets for exclusive minimum and maximum values.
+     * For example: {@code range[1, 5]}, {@code range(1, 5)}, {@code range[1, 5)}.</li>
+     * <li>To set a minimum/maximum value, use the same format for range but use "infinity"
+     * or "-infinity" as the second value. For example, {@code range[1, infinity]} means the
+     * minimum allowable value of this parameter is 1.</li>
+     * </ol>
+     */
+    String allowableValues() default "";
+```
+
+三种值：
+
+1.允许的列表，用逗号分隔，例如：allowableValues="汽车,火车,飞机"
+
+2.最小值，最大值，range[x , x]，例如：range[1 , 10]
+
+3.只限制最小值或只限制最大值，例如：range[1 , infinity]，只限制了最小值为1，最大值为无穷大(也就是不限制)。
+
+
+
+
+
+
+

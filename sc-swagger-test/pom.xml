@@ -42,6 +42,7 @@
 			<artifactId>springfox-swagger2</artifactId>
 			<version>2.9.2</version>
 			<exclusions>
+				<!-- 排除低版本的guava否则报错 -->
 				<exclusion>
 					<groupId>com.google.guava</groupId>
 					<artifactId>guava</artifactId>
@@ -60,6 +61,9 @@
 			<artifactId>guava</artifactId>
 			<version>28.1-jre</version><!--$NO-MVN-MAN-VER$-->
 		</dependency>
+		
+		<!-- 下面的依赖包，可有可无，本例加入是否为测试将来生产环境下与其它依赖的兼容性 -->
+		
 		<!-- spring boot web -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -75,6 +79,26 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<optional>true</optional>
+		</dependency>
+		<!-- spring cloud config client -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-config</artifactId>
+		</dependency>
+		<!-- spring cloud bus -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-bus-amqp</artifactId>
+		</dependency>
+		<!-- spring cloud eureka client -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+		</dependency>
+		<!-- spring cloud sleuth -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-sleuth</artifactId>
 		</dependency>
 	</dependencies>
 
