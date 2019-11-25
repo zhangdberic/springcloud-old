@@ -52,5 +52,11 @@ public abstract class HystrixTestBase {
 		}
 	}
 	
+	User sendSpeelRequest(int sleep) {
+		RestTemplate rest = new RestTemplate();
+		User user = rest.getForObject("http://localhost:{port}/user1/1?sleep={sleep}", User.class, this.getPort(),sleep);
+		return user;
+	}
+	
 	abstract int getPort() ;
 }

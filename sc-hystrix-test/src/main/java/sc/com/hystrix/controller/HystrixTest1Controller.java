@@ -19,19 +19,51 @@ import sc.com.hystrix.domain.User;
 public class HystrixTest1Controller {
 	/** 日志 */
 	private static final Logger logger = LoggerFactory.getLogger(HystrixTest1Controller.class);
-
+	/** 失败计数器 */
 	private final AtomicInteger failureCount = new AtomicInteger(0);
 
 	@Autowired
 	private RestTemplate restTemplate;
+	
+	/**
+	 * 测试超时
+	 * @param id
+	 * @param sleep 休眠时间
+	 * @return
+	 */
+	@HystrixCommand(fallbackMethod = "findUser1ByIdFallback")
+	//@HystrixCommand(fallbackMethod = "findUser1ByIdFallback",commandProperties= {@HystrixProperty(name="execution.isolation.strategy",value="SEMAPHORE")})
+	@GetMapping(value = "/user1/{id}")
+	public User findUser1ById(@PathVariable Long id, @RequestParam int sleep) {
+		logger.info("request param sleep[{}].", sleep);
+		try {
+			Thread.sleep(sleep);
+		} catch (InterruptedException ex) {
+			throw new RuntimeException(ex);
+		}
+		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+	}
 
 	/**
-	 * 测试如下情况，需要编写测试用例，{@link}
-	 * 5000毫秒内超出20次请求失败则激活短路器（用于测试如果激活短路器），默认值(5000毫秒20次)
-	 * 再再发送10个正确的请求全部回退（用于测试短路器打开的情况下正确的请求也会被拒绝）
-	 * 休眠10000毫秒发送一个请求通过短路器（测试短路器打开的状态下经过一段时间，允许1个请求通过），默认值(10000毫秒1次)
-	 * 默认值，可以看{@link HystrixCommandProperties}
+	 * 回退方法(降级方法)
 	 * @param id
+	 * @param sleep
+	 * @return
+	 */
+	public User findUser1ByIdFallback(Long id, int sleep) {
+		logger.info("into fallback[{}].");
+		User user = new User();
+		user.setId(-1l);
+		user.setName("默认用户");
+		return user;
+	}	
+
+	/**
+	 * 配合测试用例@see sc.com.hystrix.HystrixTest1和@see sc.com.hystrix.HystrixTest2，来测试，
+	 * 断路器打开（跳闸）、保护机制、回退机制、自我修复。
+	 * 
+	 * @param id
+	 * @param status status=true标识为成功请求，status=failure标识为失败请求。
 	 * @return
 	 */
 	@HystrixCommand(fallbackMethod = "findUser2ByIdFallback")
@@ -50,14 +82,17 @@ public class HystrixTest1Controller {
 	/**
 	 * 回退方法(降级方法)
 	 * @param id
+	 * @param status
 	 * @return
 	 */
 	public User findUser2ByIdFallback(Long id, Boolean status) {
-		logger.info("into fallback[{}].",this.failureCount.get());
+		logger.info("into fallback[{}].", this.failureCount.get());
 		User user = new User();
 		user.setId(-1l);
 		user.setName("默认用户");
 		return user;
 	}
+
+
 
 }
