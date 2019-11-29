@@ -1,0 +1,141 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.sc</groupId>
+  <artifactId>sc-seata-mstest3</artifactId>
+  <version>1.0.1</version>
+  <name>spring cloud seata mstest3</name>
+  
+	<!-- 引入spring boot依赖 -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.1.0.RELEASE</version>
+	</parent>
+
+	<!-- 配置属性 -->
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<!--引入spring cloud 依赖 -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>Finchley.RELEASE</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- spring boot web -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<!-- spring boot test -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- spring boot actuator -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- spring cloud eureka client <dependency> <groupId>org.springframework.cloud</groupId> 
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId> </dependency> -->
+		<!--feign -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-ribbon</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<!-- alibaba seata -->
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+			<version>2.1.0.RELEASE</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>seata-all</artifactId>
+					<groupId>io.seata</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>io.seata</groupId>
+			<artifactId>seata-all</artifactId>
+			<version>0.9.0</version>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>druid-spring-boot-starter</artifactId>
+			<version>1.1.10</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- 引入spring-boot的maven插件 -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- 引入docker打包maven插件 -->
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>docker-maven-plugin</artifactId>
+				<version>0.4.13</version>
+				<configuration>
+					<!-- 访问 docker api 端口 -->
+					<dockerHost>http://dyit.com:2375</dockerHost>
+					<!-- dyit.com:5000为仓库地址 -->
+					<imageName>dyit.com:5000/sc/${project.name}:${project.version}</imageName>
+					<!-- 使用的基础镜像,生成Dockerfile的FROM指令 -->
+					<baseImage>base/java:1.8</baseImage>
+					<!-- docker启动后执行的命令,生成Dockerfile的ENTRYPOINT指令 -->
+					<entryPoint>["sh","-c","exec java $JAVA_OPTS -jar
+						/${project.build.finalName}.jar $APP_ENV"]</entryPoint>
+					<resources>
+						<resource>
+							<targetPath>/</targetPath>
+							<directory>${project.build.directory}</directory>
+							<!--添加到镜像的文件,生成Dockerfile的ADD指令 -->
+							<include>${project.build.finalName}.jar</include>
+						</resource>
+					</resources>
+					<!-- 覆盖相同tag的镜像(支持重复发布) -->
+					<forceTags>true</forceTags>
+					<!-- Basic auth 的配置，见settings.xml配置 -->
+					<serverId>dyit.com:5000</serverId>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>  
+</project>
