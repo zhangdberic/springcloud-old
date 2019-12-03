@@ -228,6 +228,8 @@ circuitBreaker.sleepWindowInMilliseconds=5000，跳闸后这个配置时间内�
 
 如果hystrix基于的THREAD模式，则ThreadLocal中的值使用无法传递到@HystrixCommand声明的方法，因为隶属两个不同的线程。
 
+有兴趣大家可以看：SleuthHystrixConcurrencyStrategy的实现代码。
+
 如下代码，是一个很平常的代码，User对象被存放到UserContext中(基于ThreadLocal存放User)，但在其无法传递到hystrix保护的方法内，因为hystrix的保护方法执行在另一个线程内，和调用线程不是同一个线程，因此ThreadLocal无法传递。
 
 ```java
