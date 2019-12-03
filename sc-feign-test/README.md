@@ -263,7 +263,9 @@ feign使用ribbon的重试配置，如果关闭了ribbon的重试，则feign的�
 
 ### 测试feign的readTimeout和ribbon的ReadTimeout的关系
 
-feign的readTimeout的配置优先级大于ribbon的ReadTimeout配置，feign的readTimeout配置或覆盖ribbon的ReadTimeout配置。
+feign的readTimeout的配置优先级大于ribbon的ReadTimeout配置，feign的readTimeout配置或覆盖ribbon的ReadTimeout配置。feign的readTimeout默认值为1000。
+
+
 
 测试方法1(feign.readTime < ribbon.ReadTimeout)：
 
