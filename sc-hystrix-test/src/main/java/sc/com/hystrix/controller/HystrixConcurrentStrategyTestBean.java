@@ -28,9 +28,5 @@ public class HystrixConcurrentStrategyTestBean {
 		user.setName("默认用户");
 		return user;
 	}
-	
-
-
-	
 
 }
