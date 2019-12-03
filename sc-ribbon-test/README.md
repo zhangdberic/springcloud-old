@@ -266,7 +266,7 @@ sc-sampleservice:
 
 #### 测试ReadTimeout设置
 
-设置ReadTimeout值的前提是ribbon.restclient.enabled=true，否则ReadTimeout设置无效。
+设置ReadTimeout值的前提是ribbon.restclient.enabled=true，否则ReadTimeout设置无效。ribbon的readTimeout的默认值为1000。
 
 测试方法：设置sc-sampleservice的ribbon的调用ReadTimeout=3000，发送请求http://192.168.5.31:8003/user/1，如果关闭重试的请求下，查看sc-ribbon-test.findByIdWithSleep方法的请求耗时为3473mills，如果开启重试MaxAutoRetries: 1和MaxAutoRetriesNextServer: 1 的情况下sc-ribbon-test.findByIdWithSleep方法的请求耗时为12488mills（4个请求，1个正常请求，3个重试请求）。
 
