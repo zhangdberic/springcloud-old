@@ -224,13 +224,146 @@ circuitBreaker.sleepWindowInMilliseconds=5000，跳闸后这个配置时间内�
 
 
 
-### 测试Hystrix的线程上下文(ThreadLocal)传递
+### 测试Hystrix的线程上下文变量(ThreadLocal)传递
 
 如果hystrix基于的THREAD模式，则ThreadLocal中的值使用无法传递到@HystrixCommand声明的方法，因为隶属两个不同的线程。
 
+如下代码，是一个很平常的代码，User对象被存放到UserContext中(基于ThreadLocal存放User)，但在其无法传递到hystrix保护的方法内，因为hystrix的保护方法执行在另一个线程内，和调用线程不是同一个线程，因此ThreadLocal无法传递。
 
+```java
+	@GetMapping(value = "/user3/{id}")
+	public User findUser3ById(@PathVariable Long id) {
+		User user =  this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+		UserContext.setUser(user); // UserContext内部基于ThreadLocal实现
+		user = this.hystrixConcurrentStrategyTestBean.findUser3Hystrix(); // 被hystrix保护
+		UserContext.remove();
+		return user;
+	}
+```
 
+```java
+public class UserContext {
+	
+	private static final ThreadLocal<User> userThreadLocal = new ThreadLocal<User>();
+	
+	public static User getUser() {
+		return userThreadLocal.get();
+	}
+	
+	public static void setUser(User user) {
+		userThreadLocal.set(user);
+	}
+	
+	public static void remove() {
+		userThreadLocal.remove();
+	}
 
+}
+```
 
+```java
+@Component
+public class HystrixConcurrentStrategyTestBean {
+	/** 日志 */
+	private static final Logger logger = LoggerFactory.getLogger(HystrixConcurrentStrategyTestBean.class);
+	
+	
+	@HystrixCommand(fallbackMethod = "findUser3HystrixFallback")
+	public User findUser3Hystrix() {
+		User user = UserContext.getUser(); // UserContext内部基于ThreadLocal实现
+		logger.info("user value[{}].",user);
+		return user;
+	}
+	
+	public User findUser3HystrixFallback() {
+		logger.info("into fallback.");
+		User user = new User();
+		user.setId(-1l);
+		user.setName("默认用户");
+		return user;
+	}
 
+}
+```
+
+为了解决上面的问题，我们要自定义hystrix的并发策略类（HystrixConcurrencyStrategy），继承这个类，并重新实现wrapCallable(Callable<T> callable)方法，对callback参数进行包装，并返回给hystrix线程。在call()方法调用前，把User对象传递到hystrix线程的线程变量(ThreadLocal)中。代码如下：
+
+```java
+public class UserContextCallable<V> implements Callable<V> {
+	private final User user;
+	private final Callable<V> callable;
+
+	/**
+	 * 外围线程初始化(例如:tomcat请求线程)
+	 * @param callable
+	 * @param user
+	 */
+	public UserContextCallable(Callable<V> callable,User user) {
+		super();
+		this.user = user;
+		this.callable = callable;
+	}
+
+	/**
+	 * Hystrix隔离仓线程调用(hystrix执行线程)
+	 */
+	@Override
+	public V call() throws Exception {
+		UserContext.setUser(this.user); // 调用前把User对象绑定到hystrix的线程变量
+		try {
+			V v = this.callable.call();
+			return v;
+		} finally {
+			UserContext.remove(); // 清理线程变量的User对象
+		}
+	}
+
+}
+```
+
+```java
+@Configuration
+public class UserContextCallbackConfiguration {
+
+	@Bean
+	public Collection<HystrixCallableWrapper> hystrixCallableWrappers() {
+		Collection<HystrixCallableWrapper> wrappers = new ArrayList<>();
+		wrappers.add(new HystrixCallableWrapper() {
+			@Override
+			public <V> Callable<V> wrap(Callable<V> callable) {
+				return new UserContextCallable<V>(callable, UserContext.getUser());
+			}
+		});
+		return wrappers;
+	}
+
+}
+```
+
+我参照网上的例子，已经实现了一个公共的HystrixConcurrencyStrategyCustom实现类，大家有兴趣可以查看sc.com.hystrix.concurrentstrategy包内的代码。
+
+测试用例代码：
+
+```java
+@RunWith(SpringJUnit4ClassRunner.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+public class HystrixTest3 {
+
+	@Value("${local.server.port}")
+	private int port;
+
+	@Test
+	public void test() {
+		RestTemplate rest = new RestTemplate();
+		User user = rest.getForObject("http://localhost:{port}/user3/1", User.class, this.getPort());
+		System.out.println(user);
+		Assert.assertNotNull(user);
+	}
+
+	public int getPort() {
+		return port;
+	}
+
+}
+```
 

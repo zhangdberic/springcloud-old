@@ -25,6 +25,9 @@ public class HystrixTest1Controller {
 	@Autowired
 	private RestTemplate restTemplate;
 	
+	@Autowired
+	private HystrixConcurrentStrategyTestBean hystrixConcurrentStrategyTestBean;
+	
 	/**
 	 * 测试超时
 	 * @param id
@@ -92,6 +95,9 @@ public class HystrixTest1Controller {
 		user.setName("默认用户");
 		return user;
 	}
+	
+
+
 	/**
 	 * 测试hystrix的ThreadLocal内容传递性
 	 * @param id
@@ -99,28 +105,13 @@ public class HystrixTest1Controller {
 	 */
 	@GetMapping(value = "/user3/{id}")
 	public User findUser3ById(@PathVariable Long id) {
-		ThreadLocal<String> testThreadLocal = new ThreadLocal<String>();
-		testThreadLocal.set("heige");
-		User user = this.findUser3HystrixById(id);
-		//logger.info("testThreadLocal value[{}].",testThreadLocal.get());
-		testThreadLocal.remove();
+		User user =  this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+		UserContext.setUser(user);
+		user = this.hystrixConcurrentStrategyTestBean.findUser3Hystrix();
+		UserContext.remove();
 		return user;
 	}
 	
-	@HystrixCommand(fallbackMethod = "findUser3HystrixByIdFallback")
-	public User findUser3HystrixById(Long id) {
-		ThreadLocal<String> testThreadLocal = new ThreadLocal<String>();
-		logger.info("testThreadLocal value[{}].",testThreadLocal.get());
-		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
-	}
-	
-	public User findUser3HystrixByIdFallback(Long id) {
-		logger.info("into fallback.");
-		User user = new User();
-		user.setId(-1l);
-		user.setName("默认用户");
-		return user;
-	}
 
 
 
