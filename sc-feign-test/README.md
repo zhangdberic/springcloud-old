@@ -18,7 +18,29 @@ pom.xml
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-starter-openfeign</artifactId>
 		</dependency>
+		<!-- feign use apache httpclient -->
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-httpclient</artifactId>
+		</dependency>
+		<!-- feign from upload file -->
+		<dependency>
+			<groupId>io.github.openfeign.form</groupId>
+			<artifactId>feign-form</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.openfeign.form</groupId>
+			<artifactId>feign-form-spring</artifactId>
+			<version>3.0.3</version>
+		</dependency>
 ```
+
+只有spring-cloud-starter-openfeign是必须的。
+
+feign-httpclient可选，但建议使用，同feign.httpclient.enabled: true配合使用则使用apache http客户端。
+
+feign-form和feign-form-spring可选，如果需要上传文件，则需要开启。
 
 根据要调用的服务，创建一个Feign接口
 
