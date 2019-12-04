@@ -479,15 +479,11 @@ feign:
 
 **定制某个feign方法的超时时间**
 
-例如某个方法处理时间比较长，需要大于默认值1000ms，例如：文件上传处理。
+例如某个方法处理时间比较长，需要大于默认值1000ms的超时处理时间，例如：文件上传处理。
 
-因为默认情况下，ribbon、feign、hystrix的超时时间都是1000ms，因此我们只有调整配置，能让某个单独的feign方法调用(服务)，能稳定运行在xxxxms就可以了，例如：uploadFile方法超时时间设置5000ms。
+因为默认情况下，ribbon、feign、hystrix的超时时间都是1000ms，因此我们只有调整配置，能让某个单独的feign方法调用(服务)，能稳定运行在xxxx ms就可以了，例如：uploadFile方法超时时间设置5000ms。
 
-好文章：https://blog.csdn.net/jerry010101/article/details/90143919
-
-
-
-通过调试feign.Feign类的configKey的方法，可以获取到HystrixCommonKey，如下代码：
+定制某个feign方法的hystrix参数比较费劲，需要先根据这个feign方法计算出对应的HystrixCommandKey，计算公式为：feign接口名#方法名(参数1类型,参数2类型,参数x类型)，只要一个字符不对也不行，因此最好的方法是调试调试feign.Feign类的configKey的方法，获取准确的HystrixCommandKey。
 
 ```java
   public static String configKey(Class targetType, Method method) {
@@ -505,7 +501,7 @@ feign:
   }
 ```
 
-例如：一个声明@FeignClient类的方法，通过上面的feign.Feign#configKey方法计算后的HystrixCommonKey为SampleServiceFeignClient#findByIdWithSleep(Long,Long)，代码如下：
+例如：一个声明@FeignClient类的方法，如下，通过调试上面的configKey方法计算后的HystrixCommandKey为SampleServiceFeignClient#findByIdWithSleep(Long,Long)：
 
 ```java
 @FeignClient(name = "sc-sampleservice")
@@ -517,7 +513,55 @@ public interface SampleServiceFeignClient {
 }
 ```
 
+获取到这个feign方法对应的HystrixCommandKey后，我们就可以为这个feign方法单独设置hystrix参数了，例如：读取超时时间。
 
+```yaml
+# hystrix 启动并发策略(自定义属性)
+hystrix: 
+  concurrent_strategy:  
+    enabled: true
+  command:
+      SampleServiceFeignClient#findByIdWithSleep(Long,Long):
+        execution:
+          isolation:
+            thread:
+              timeoutInMilliseconds: 2000    
+feign: 
+  httpclient: 
+    # 使用apache httpclient
+    enabled: true    
+  client: 
+    config: 
+      # 定义sc-sampleservice服务的feign设置
+      sc-sampleservice: 
+        connectTimeout: 1000
+        readTimeout: 2000
+  hystrix:  
+    # 开启hystrix+feign  
+    enabled: true 
+```
 
+因此遵照feign+hystrix组合使用最小配置值为超时时间的规则，因此我们要同时调整两个参数：hystrix的timeoutInMilliseconds和feign的readTimeout参数（参照上面的yml配置），否则无效。
 
+参照上面yml，如果要调整feign方法SampleServiceFeignClient#findByIdWithSleep(Long,Long)的读取超时时间为2000ms，需要分别设置timeoutInMilliseconds: 2000 ，readTimeout: 2000(@FeignClient(name = "sc-sampleservice")声明服务;)，否则无效。
+
+验证测试：
+
+URL请求http://localhost:8300/user4/1?sleep=xxx，会触发HystrixTest4Controller调用hystrix保护的feign方法SampleServiceFeignClient#findByIdWithSleep(Long,Long)。
+
+URL请求http://localhost:8300/user1/1?sleep=xxx，会触发HystrixTest1Controller调用hystrix保护的ribbon方法User findUser1ById(@PathVariable Long id, @RequestParam int sleep)。
+
+发送请求，http://localhost:8300/user4/1?sleep=1800，返回正确的User信息。 证明单独的hystrix+feign某个方法调用超时配置有效。
+
+发送请求，http://localhost:8300/user4/1?sleep=2100，报错或返回回退的User信息。证明单独的hystrix+feign某个方法调用超时配置有效。
+
+发送请求，http://localhost:8300/user1/1?sleep=1800，报错或返回回退的User信息。证明单独的hystrix+feign某个方法调用超时配置有效，但系统的默认超时时间还是1000ms，也就是没有单独配置的方法受到默认值的控制。
+
+### Hystrix监控
+
+如果项目加入spring-boot-starter-actuator，就可以监控hystrix的运行情况，使用如下的URL持续监控(默认每隔500ms刷新一次)。
+
+http://localhost:8300/hystrix.stream
+
+关于Hystrix Dashboard可视化数据监控，可以查看sc-hystrix-turbine目录文档。
 

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import sc.com.hystrix.domain.User;
 
 
-@FeignClient(name = "sc-sampleservice")
+@FeignClient(name = "sc-sampleservice",fallbackFactory=SampleServiceFeignClientFallbackFactory.class)
 public interface SampleServiceFeignClient {
 
 	
