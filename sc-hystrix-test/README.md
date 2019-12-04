@@ -27,9 +27,72 @@
 5. 回退机制：当前请求失败、超时、被拒绝或者短路器已经打开（跳闸），直接调用“回退方法”返回数据。
 6. 自我修复：断路器打开一段时间后，会自动进入“半开”状态，允许一个请求通过，要验证服务是否可用，可用则关闭断路器，不可以用继续打开断路器。
 
-# hystrix配置
+# 使用hystrix实现微服务的容错处理
 
-com.netflix.hystrix.HystrixCommandProperties
+**pom.xml**
+
+```xml
+		<!-- spring cloud hystrix -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+		</dependency>
+		<!-- spring cloud feign -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-openfeign</artifactId>
+		</dependency>	
+		<!-- feign use apache httpclient -->
+		<dependency>
+			<groupId>io.github.openfeign</groupId>
+			<artifactId>feign-httpclient</artifactId>
+		</dependency>	
+```
+
+上面的spring cloud feign和feign-httpclient不是必须的，如果要结合feign+hystrix，则需要加入，否则如果你只使用ribbon则无必要加入。如果需要feign支持文件上传，则还有加入feign-form相关，具体见"feign文档"。
+
+**启动application加入@EnableHystrix源注释**
+
+```java
+@SpringBootApplication
+@EnableHystrix
+@EnableFeignClients
+public class HystrixTestApplication {
+	
+	@Bean
+	@LoadBalanced
+	public RestTemplate restTemplate() {
+		return new RestTemplate();
+	}
+
+	public static void main(String[] args) {
+		SpringApplication.run(HystrixTestApplication.class, args);
+	}
+
+}
+```
+
+如果要结合feign+hystrix，则需要加入@EnableFeignClients
+
+**hystrix保护方法**
+
+```java
+	@HystrixCommand(fallbackMethod = "findUser1ByIdFallback")
+	@GetMapping(value = "/user1/{id}")
+	public User findUser1ById(@PathVariable Long id, @RequestParam int sleep) {
+		logger.info("request param sleep[{}].", sleep);
+		try {
+			Thread.sleep(sleep);
+		} catch (InterruptedException ex) {
+			throw new RuntimeException(ex);
+		}
+		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+	}
+```
+
+在需要hystrix保护的方法上，加上@HystrixCommand源注释，HystrixCommand的源注释参数比较多，具体见：com.netflix.hystrix.HystrixCommandProperties。
+
+
 
 # 测试hystrix
 
@@ -115,9 +178,7 @@ public class HystrixTest1 extends HystrixTestBase {
 
 本测试关系到配置属性：
 
-execution.isolation.thread.timeoutInMilliseconds=1000
-
-
+execution.isolation.thread.timeoutInMilliseconds=1000(默认值)
 
 本测试还可以验证，在SEMAPHORE模式也支持超时判断。
 
@@ -368,4 +429,95 @@ public class HystrixTest3 {
 
 }
 ```
+
+### 测试hystrix+feign
+
+如果feign要使用hystrix保护，则需要加入配置（默认feign不受hystrix保护）：
+
+```yaml
+feign: 
+  httpclient: 
+    # 使用apache httpclient
+    enabled: true   
+  hystrix:  
+    # 开启hystrix+feign  
+    enabled: true 
+```
+
+**读取超时时间(readTimeout)**
+
+默认为1000ms，如果要定制feign+hystrix的超时时间，则由feign.client.config.default.readTimeout和hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds两者中最小值来决定。
+
+```yaml
+# hystrix 
+hystrix: 
+  command:
+      default:
+        execution:
+          isolation:
+            thread:
+              timeoutInMilliseconds: 2000    
+# feign              
+feign: 
+  httpclient: 
+    # 使用apache httpclient
+    enabled: true    
+  client: 
+    config: 
+      # 定义全局的feign设置
+      default: 
+        connectTimeout: 1000
+        readTimeout: 3000
+  hystrix:  
+    # 开启hystrix+feign  
+    enabled: true   
+```
+
+如果上面的配置，则调用feign方法的超时时间为2000毫秒，如果你把hystrix的timeoutInMilliseconds修改为4000，则调用feign方法的超时时间为3000毫秒。
+
+你可以通过发送请求：http://localhost:8300/user4/1?sleep=2800，调整sleep参数，来验证上面的配置。
+
+**定制某个feign方法的超时时间**
+
+例如某个方法处理时间比较长，需要大于默认值1000ms，例如：文件上传处理。
+
+因为默认情况下，ribbon、feign、hystrix的超时时间都是1000ms，因此我们只有调整配置，能让某个单独的feign方法调用(服务)，能稳定运行在xxxxms就可以了，例如：uploadFile方法超时时间设置5000ms。
+
+好文章：https://blog.csdn.net/jerry010101/article/details/90143919
+
+
+
+通过调试feign.Feign类的configKey的方法，可以获取到HystrixCommonKey，如下代码：
+
+```java
+  public static String configKey(Class targetType, Method method) {
+    StringBuilder builder = new StringBuilder();
+    builder.append(targetType.getSimpleName());
+    builder.append('#').append(method.getName()).append('(');
+    for (Type param : method.getGenericParameterTypes()) {
+      param = Types.resolve(targetType, targetType, param);
+      builder.append(Types.getRawType(param).getSimpleName()).append(',');
+    }
+    if (method.getParameterTypes().length > 0) {
+      builder.deleteCharAt(builder.length() - 1);
+    }
+    return builder.append(')').toString();
+  }
+```
+
+例如：一个声明@FeignClient类的方法，通过上面的feign.Feign#configKey方法计算后的HystrixCommonKey为SampleServiceFeignClient#findByIdWithSleep(Long,Long)，代码如下：
+
+```java
+@FeignClient(name = "sc-sampleservice")
+public interface SampleServiceFeignClient {
+	
+	@RequestMapping(value = "/{id}", params = "sleep", method = RequestMethod.GET)
+	User findByIdWithSleep(@PathVariable("id") Long id, @RequestParam(value = "sleep", required = false, defaultValue = "0") Long sleep);
+	
+}
+```
+
+
+
+
 
