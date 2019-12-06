@@ -1,0 +1,27 @@
+# 开发环境        
+server: 
+  port: 28031
+spring:
+  # java -D属性可以覆盖本远程参数
+  cloud:
+    config:
+      overrideSystemProperties: false  
+  rabbitmq:
+    host: 192.168.5.29
+    port: 5672
+    username: admin
+    password: Rabbitmq-401   
+eureka:
+  client:
+    service-url:
+      defaultZone: http://sc-eureka:veDSJeUX-JSxkWrk@192.168.5.78:8070/eureka/,http://sc-eureka:veDSJeUX-JSxkWrk@192.168.5.78:8071/eureka/
+    # 客户端监控检查(定时检查并发送健康状态到eureka服务器)  
+    healthcheck:
+      enabled: true      
+  instance:
+    prefer-ip-address: true
+    non-secure-port: 28031
+management:
+  port: 20011
+  security:
+    enabled: false    
