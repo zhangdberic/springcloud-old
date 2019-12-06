@@ -21,11 +21,59 @@
 ## hystrix提供了
 
 1. 包裹请求：使用HystrixCommand，包裹服务的调用逻辑，每个命令在独立线程中执行。命令模式。
+
 2. 跳闸机制：当前某个服务的错误率超出一定阀值时，Hystrix可以自动跳闸，停止请求该服务一段时间。
+
 3. **资源隔离**：Hystrix为每个依赖都维护一个小型的线程池。如果该线程池已满，发往该依赖的请求就立即被拒绝，而不是排队等候，从而快速失败。
+
 4. 监控：Hystrix提供实时的监控运行指标。
+
 5. 回退机制：当前请求失败、超时、被拒绝或者短路器已经打开（跳闸），直接调用“回退方法”返回数据。
+
 6. 自我修复：断路器打开一段时间后，会自动进入“半开”状态，允许一个请求通过，要验证服务是否可用，可用则关闭断路器，不可以用继续打开断路器。
+
+   ### hystrix线程隔离
+
+   基于thread模式，可以做到线程隔离，被hystrix保护的方法(@HystrixCommand)，运行在一个单独的线程池内，与调用线程分离。默认情况下根据**类**来创建线程池，例如：UserController内部有两个方法，addUser(User)和ModifyUser(Long,User)方法，这个两个方法都使用@HystrixCommand修饰(被Hystrix保护)，那么Hystrix会根据类名UserController来创建一个线程池，这两个方法的调用运行在在UserController线程池中。默认：池的大小为10个，队列大小为5。这就抛出一个问题，如果一个jvm上跑100个Controller，那么就会创建100个线程池，每个10个线程，那就是1000个线程，这显然不能接受。因此我们要定制那些服务接口(Hystrix保护的方法)，放在同一个线程池上，并合理的设置线程池和线程内线程的个数。
+
+   通过使用@HystrixCommand源注释内的threadPoolKey属性，设置当前方法运行在那个线程池上。例如：不同Controller的内的方法，运行在一个线程池上，或者同一个Controller内的两个方法运行在不同的线程池上。
+
+   ```java
+   	@HystrixCommand(groupKey = "heigeGroup", threadPoolKey = "heigeThreadPoolKey", fallbackMethod = "findUser5ByIdFallback", threadPoolProperties = { 
+   			@HystrixProperty(name = "coreSize", value = "1"),
+   			@HystrixProperty(name = "maxQueueSize", value = "10") 
+   			}
+   	)
+   	@GetMapping(value = "/user5/{id}")
+   	public User findUser1ById(@PathVariable Long id, @RequestParam int sleep) {
+   		logger.info("request param sleep[{}].", sleep);
+   		try {
+   			Thread.sleep(sleep);
+   		} catch (InterruptedException ex) {
+   			throw new RuntimeException(ex);
+   		}
+   		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+   	}
+   	
+   	@HystrixCommand(groupKey = "heigeGroup", threadPoolKey = "jiaojieThreadPoolKey", fallbackMethod = "findUser5ByIdFallback", threadPoolProperties = { 
+   			@HystrixProperty(name = "coreSize", value = "2"),
+   			@HystrixProperty(name = "maxQueueSize", value = "10") 
+   			}
+   	)
+   	@GetMapping(value = "/user5a/{id}")
+   	public User findUser2ById(@PathVariable Long id, @RequestParam int sleep) {
+   		logger.info("request param sleep[{}].", sleep);
+   		try {
+   			Thread.sleep(sleep);
+   		} catch (InterruptedException ex) {
+   			throw new RuntimeException(ex);
+   		}
+   		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
+   	}
+   
+   ```
+
+   
 
 # 使用hystrix实现微服务的容错处理
 
