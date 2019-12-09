@@ -157,6 +157,12 @@ public class TurbineServerApplication {
 
 
 
+### 1.6 Docker 启动脚本
+
+docker run -itd --cap-add=SYS_PTRACE --name sc-hystrix-turbine --net host -e JAVA_OPTS="-Xms100m -Xmx100m -Xmn60m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC" -e APP_ENV="--spring.profiles.active=dev" dyit.com:5000/sc/sc-hystrix-turbine:1.0.1
+
+
+
 ## 2. 服务改造发送hystrix监控数据到rabbitmq
 
 ### 2.1 pom.xml
