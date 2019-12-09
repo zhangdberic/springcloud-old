@@ -45,12 +45,6 @@ eureka:
 
 
 
-## FAQ
-
-1、建议基于docker host网络模式来部署eureka，不应使用birdge模式，防止eureka注册的ip为172.17.0.x、防止docker主机名重启变动(这些都是birdge模式的特殊性造成的)。
-
-
-
 ## DOCKER RUN脚本
 
 docker run -itd --cap-add=SYS_PTRACE --name sc-eureka1 --net host -e JAVA_OPTS="-Xms200m -Xmx200m -Xmn80m -XX:+UseParNewGC -XX:+UseConcMarkSweepGC" -e APP_ENV="--spring.profiles.active=dev --server.port=8070 --eureka.instance.hostname=eureka1"  dyit.com:5000/sc/sc-eureka:1.0.1
@@ -69,11 +63,26 @@ docker run -itd --cap-add=SYS_PTRACE --name sc-eureka2 --net host -e JAVA_OPTS="
 
 ## 运行成功截图
 
-![eureka1](https://github.com/zhangdberic/springcloud/blob/master/sc-eureka/doc/eureka-ha2.png)
+![eureka1](./doc/eureka-ha2.png)
 
-![eureka2](https://github.com/zhangdberic/springcloud/blob/master/sc-eureka/doc/eureka-ha1.png)
+![eureka2](./doc/eureka-ha1.png)
 
 **注意：DS Replicas是对方主机名(对应eureka.instance.hostname)，registered-replicas和availabel-replicas都是对方主机的eureka注册链接。**
 
+## FAQ
 
+1、建议基于docker host网络模式来部署eureka，不应使用birdge模式，防止eureka注册的ip为172.17.0.x、防止docker主机名重启变动(这些都是birdge模式的特殊性造成的)。
 
+2、默认情况下eureka开启了自我保护模式下，如果多个服务同时快速下线，则出现DOWN状态，处理：
+
+![](./doc/eureka_down.png)
+
+使用eureka提供的restful的api来处理，使用curl或postman发送**DELETE**请求：
+
+URL格式：
+
+http://eurekaip:port/eureka/apps/{application}/{instance}
+
+例如：
+
+http://192.168.5.78:8070/eureka/apps/SC-SEATA-MSTEST1/heige-PC:sc-seata-mstest1:8101
