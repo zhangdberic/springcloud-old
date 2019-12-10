@@ -485,7 +485,19 @@ http://192.168.5.31:8090/api/sampleservice/1?sleep=11000，回退返回。
 
 
 
-### 2.9 设置信号量
+### 2.9 zuul使用ribbon重试
+
+测试重试，后台开启两个sc-sampleservice的docker，使用zuul做为服务网关，接收请求，正常情况下是负载均衡分发，当停止一个sc-sampleservice的docker，再发送请求到zuul看能否正常返回结果，并通过日志查看是否有重试操作。
+
+默认情况：就已经开启了重试，重试的默认值：maxAutoRetries = 0，maxAutoRetriesNextServer = 1，测试通过。
+
+maxAutoRetries 同一实例重试次数，默认为0。
+
+maxAutoRetriesNextServer 重试其它实例的最大次数，如果有3个实例，应该设置2，默认值1。
+
+
+
+### 2.10 设置信号量
 
 在默认的SEMAPHORE隔离策略下，信号量可以控制服务允许的并发访问量。
 
@@ -501,9 +513,7 @@ zuul:
         max-semaphores: 50 
 ```
 
-
-
-### 2.10 tomcat参数设置
+### 2.11 tomcat参数设置
 
 通过设置tomcat参数来调整zuul对外服务能力
 
@@ -517,6 +527,8 @@ server:
 ```
 
 
+
+### 
 
 
 

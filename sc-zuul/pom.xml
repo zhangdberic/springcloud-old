@@ -104,8 +104,7 @@
 					<!-- 使用的基础镜像,生成Dockerfile的FROM指令 -->
 					<baseImage>base/java:1.8</baseImage>
 					<!-- docker启动后执行的命令,生成Dockerfile的ENTRYPOINT指令 -->
-					<entryPoint>["sh","-c","exec java $JAVA_OPTS -jar
-						${project.build.finalName}.jar --spring.profiles.active=${ENV}"]</entryPoint>
+					<entryPoint>["sh","-c","exec java $JAVA_OPTS -jar /${project.build.finalName}.jar $APP_ENV"]</entryPoint>
 					<resources>
 						<resource>
 							<targetPath>/</targetPath>
