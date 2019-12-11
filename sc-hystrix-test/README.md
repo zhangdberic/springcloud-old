@@ -32,12 +32,14 @@
 
 6. 自我修复：断路器打开一段时间后，会自动进入“半开”状态，允许一个请求通过，要验证服务是否可用，可用则关闭断路器，不可以用继续打开断路器。
 
-   ### hystrix线程隔离
+   ### hystrix线程(Thread)隔离
 
-   基于thread模式，可以做到线程隔离，被hystrix保护的方法(@HystrixCommand)，运行在一个单独的线程池内，与调用线程分离。默认情况下根据**类**来创建线程池，例如：UserController内部有两个方法，addUser(User)和ModifyUser(Long,User)方法，这个两个方法都使用@HystrixCommand修饰(被Hystrix保护)，那么Hystrix会根据类名UserController来创建一个线程池，这两个方法的调用运行在在UserController线程池中。默认：池的大小为10个，队列大小为5。这就抛出一个问题，如果一个jvm上跑100个Controller，那么就会创建100个线程池，每个10个线程，那就是1000个线程，这显然不能接受。因此我们要定制那些服务接口(Hystrix保护的方法)，放在同一个线程池上，并合理的设置线程池和线程内线程的个数。
+   #### 在那个线程池中运行?
+
+   基于thread模式，可以做到线程隔离，被hystrix保护的方法(@HystrixCommand)，运行在一个单独的线程池内，与调用线程分离。默认情况下根据**类名**来创建线程池，例如：UserController内部有两个方法，addUser(User)和ModifyUser(Long,User)方法，这个两个方法都使用@HystrixCommand修饰(被Hystrix保护)，那么Hystrix会根据类名UserController来创建一个线程池，这两个方法的调用运行在在UserController线程池中。默认：池的大小为10个，队列大小为5。这就有个问题，如果一个jvm上跑100个Controller，那么就会创建100个线程池，每个10个线程，那就是1000个线程，这显然不能接受。因此我们要定制那些服务接口(Hystrix保护的方法)，放在同一个线程池上，并合理的设置线程池和线程内线程的个数。
 
    通过使用@HystrixCommand源注释内的threadPoolKey属性，设置当前方法运行在那个线程池上。例如：不同Controller的内的方法，运行在一个线程池上，或者同一个Controller内的两个方法运行在不同的线程池上。
-
+   
    ```java
    	@HystrixCommand(groupKey = "heigeGroup", threadPoolKey = "heigeThreadPoolKey", fallbackMethod = "findUser5ByIdFallback", threadPoolProperties = { 
    			@HystrixProperty(name = "coreSize", value = "1"),
@@ -70,10 +72,50 @@
    		}
    		return this.restTemplate.getForObject("http://sc-sampleservice/{id}", User.class, id);
    	}
-   
-   ```
 
+   ```
    
+
+
+
+#### hystrix线程池运行是否会阻塞调用的线程?
+
+目前测试结果是，即使是使用线程池隔离策略（也就说hystrix保护的方法在独立的线程池上运行），调用这个hystrix保护方法的线程任会被阻塞，等待hystrix保护方法在其线程上运行后返回。
+
+测试方法，tomcat设置1个线程，使用hystrix保护方法(method)，默认池大小为10个。
+
+如果发送请求，则controller代码运行在tomcat的线程池上，hystrix保护的方法运行在hystrix线程池上。
+
+在浏览器上发送请求，代码执行进入到hystrix保护的方法后休眠(sleep)，这时如果再使用另一个浏览器发送同样的请求，无法进入到controller，说明tomcat的这个线程已经被占用，tomcat执行线程在等待这个hystrix保护的方法线程执行完返回。
+
+设置tomcat只最大运行的最大线程数为1：
+
+```yaml
+server:  
+  tomcat: 
+    max-threads: 1
+    min-spare-threads: 1
+```
+
+加大读取超时时间配置60000：
+
+```yaml
+hystrix:
+  command:
+    default: 
+      execution:
+        isolation:
+          thread:
+            timeoutInMilliseconds: 60000    
+ribbon:
+  ReadTimeout: 60000            
+```
+
+具体的代码，参见HystrixTest6Controller类。
+
+总结：经过上面的测试，得到结论，调用线程和hystrix保护方法运行线程是1对1的，也就是说执行一个操作需要阻塞两个线程。那你可能要有疑问，hystrix是为了保护程序而使用线程隔离，而现在却多了1倍的线程，这样有什么意义？意义就在于即使多使用了1倍的线程，而对整个系统进行了保护。例如：默认hystrix保护的方法运行在线程大小为10的线程池中，如果被保护的方法出现慢处理，则10个线程都在运行中，这时如果第11个请求调用hystrix保护方法，由于线程池已满则直接回退。如果没有hystrix线程隔离，则所有tomcat线程都会被占满，知道最后超出max-threads限制。我们尽管使用了20个线程来处理，总比出现问题后整个系统所有的服务调用雪崩强呀。
+
+
 
 # 使用hystrix实现微服务的容错处理
 
