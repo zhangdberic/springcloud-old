@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.netflix.zuul.filters.route.FallbackProvider;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,6 +25,8 @@ import com.netflix.hystrix.exception.HystrixTimeoutException;
  */
 @Component
 public class MyFallbackProvider implements FallbackProvider {
+	/** 日志 */
+	private final Logger logger = LoggerFactory.getLogger(MyFallbackProvider.class);
 
 	@Override
 	public String getRoute() {
@@ -32,6 +36,7 @@ public class MyFallbackProvider implements FallbackProvider {
 
 	@Override
 	public ClientHttpResponse fallbackResponse(Throwable cause) {
+		logger.error("错误", cause);
 		// 注意，只有hystrix异常才会好触发这个接口
 		if (cause instanceof HystrixTimeoutException) {
 			return response(HttpStatus.GATEWAY_TIMEOUT);
@@ -50,7 +55,7 @@ public class MyFallbackProvider implements FallbackProvider {
 
 			@Override
 			public InputStream getBody() throws IOException {
-				return new ByteArrayInputStream(("{\"code\":\""+ status.value()+"\",\"message\":\"服务不可用，请求稍后重试。\"}").getBytes());
+				return new ByteArrayInputStream(("{\"code\":\"" + status.value() + "\",\"message\":\"服务不可用，请求稍后重试。\"}").getBytes());
 			}
 
 			@Override
