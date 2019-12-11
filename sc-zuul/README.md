@@ -528,7 +528,39 @@ server:
 
 
 
-### 
+### 3. Zuul高可用
+
+Zuul可以像其它的spring cloud组件一样，把其注册到eureka上来实现zuul的高可用。但有些情况下，需要浏览器和app直接访问zuul，这种情况下可以使用nginx、HAProxy、F5等实现HA，并后接多个ZUUL来实现负载均衡和高可用。最佳实践是两种都用，两个zuul都注册到eureka上，供内网eureka客户端调用，并前置nginx(HA)供外网用户访问。
+
+
+
+### 4.zuul整合其他非eureka上的服务
+
+#### 4.1 配置routes路由请求到指定的URL
+
+```yaml
+zuul: 
+  # 开放服务
+  routes: 
+    # 测试整合其它非eureka上的服务  
+    dongyuit:
+      path: /dongyuit/**
+      url: http://www.dongyuit.cn/    
+```
+
+自定义了一个路由dongyuit，所有对/dongyuit/**前置的请求都会转发到http://www.dongyuit.cn/ ，例如：
+
+http://192.168.5.31:8090/api/dongyuit/index.html
+
+但要注意：上面的整合方法，请求不支持ribbon和hystrix，也就是说不支持负载均衡和hystrix容错。待以后解决。
+
+#### 4.2 sidecar
+
+需要被整合的服务端实现/health，这在整合一些第三方服务的情况下不可能，第三方法不可能给你实现一个/health功能。待以后解决。
+
+
+
+
 
 
 
