@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- 控制台输出 -->
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder	class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n</pattern>
+		</encoder>
+	</appender>
+	<!-- Rabbitmq AMQP 输出 -->
+	<appender name="AMQP"
+		class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+		<layout>
+			<pattern>
+				{
+				"time": "%date{ISO8601}",
+				"thread": "%thread",
+				"level": "%level",
+				"class": "%logger{60}",
+				"message": "%msg"
+				}
+			</pattern>
+		</layout>
+		<host>192.168.5.29</host>
+		<port>5672</port>
+		<username>admin</username>
+		<password>Rabbitmq-401</password>
+		<applicationId>sc-sleuth-test</applicationId>
+		<routingKeyPattern>logstash</routingKeyPattern>
+		<declareExchange>true</declareExchange>
+		<exchangeType>direct</exchangeType>
+		<exchangeName>ex_logstash</exchangeName>
+		<generateId>true</generateId>
+		<charset>UTF-8</charset>
+		<durable>true</durable>
+		<deliveryMode>PERSISTENT</deliveryMode>
+	</appender>
+
+	<root level="INFO">
+		<appender-ref ref="AMQP" />
+		<appender-ref ref="STDOUT" />
+	</root>
+	
+</configuration>
