@@ -147,3 +147,44 @@ docker run -d -it logstash -e 'input { rabbitmq {host => "192.168.5.29" port => 
 
 
 
+## FAQ
+
+### sleuth日志存放到es的那个索引中
+
+因为是基于logstash来获取数据，因此存放到es中的索引就是logstash-yyyy.MM.dd，例如：logstash-2019.12.16，因此只要配置kibana显示logstash-*的index patterns就可以显示sleuth的日志了。
+
+
+
+### 查看es中的索引
+
+http://192.168.5.78:9200/_cat/indices
+
+例如：
+
+```
+yellow open logstash-2019.12.15    9OONnJ4mR5OIt5tqB2KxOA 5 1   24 0 185.9kb 185.9kb
+yellow open .kibana                7m-SoUdZRJabs_8QLxyI1Q 1 1    3 0    15kb    15kb
+yellow open logstash-2019.12.16    rIX4uuhlQiqr5T0d-1F5ng 5 1 2028 0     1mb     1mb
+yellow open logstash-2019.12.14    3Ky3YFDYRCmE3njeEzzn8A 5 1  812 0 578.3kb 578.3kb
+yellow open zipkin:span-2019-12-17 AQviXr49RCKqrawsKf9f5g 5 1  344 0 249.8kb 249.8kb
+yellow open logstash-2019.12.17    hXQ42waGRH2ZoL-xTXAsgQ 5 1  539 0 548.2kb 548.2kb
+```
+
+### 配置kibana中查看数据
+
+kibana主界面中菜单Management->Index Patterns->Create Index Pattern
+
+Index pattern输入框中输入要查看的索引，例如：上面的索引zipkin:span-2019-12-17，如果你想查看索引的zipkin数据，则可以输入：zipkin*，则将匹配索引**zipkin:span-yyyy-MM-dd**的数据。
+
+Time Filter file name输入框中，kibana会自动根据数据获取到时间相关的字段，然后提示你创建基于时间戳的索引，例如：@timestamp。
+
+![](./doc/kibana2.png)
+
+点击Create按钮，配置要查看的索引数据。
+
+然后回到主界面上，选择zipkin*(Index Pattern)，显示zipkin相关的数据。注意：kibana默认只显示15分钟内的数据，如果要显示一天的数据可以选择Today，如下图：
+
+![](./doc/kibana3.png)
+
+
+
