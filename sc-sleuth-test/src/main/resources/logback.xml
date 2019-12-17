@@ -7,8 +7,6 @@
 			<!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
 			<!-- 非sleuth环境日志格式: %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n -->
 			<!-- sleuth环境日志格式: %d{yyyy-MM-dd HH:mm:ss.SSS}[${APP_NAME},%X{X-B3-TraceId:-},%X{X-B3-SpanId:-},%X{X-Span-Export:-}][%thread] %-5level %logger{50} - %msg%n -->
-			<!-- sleuth环境日志格式: %d{yyyy-MM-dd HH:mm:ss.SSS}[${APP_NAME},%X{X-B3-TraceId:-},%X{X-B3-SpanId:-},%X{X-Span-Export:-}][%thread] %-5level %logger{50}|%F.%M:%L| - %msg%n -->
-			
 			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}[${APP_NAME},%X{X-B3-TraceId:-},%X{X-B3-SpanId:-},%X{X-Span-Export:-}][%thread] %-5level %logger{50} - %msg%n</pattern>
 		</encoder>
 	</appender>
@@ -16,15 +14,7 @@
 	<appender name="AMQP"
 		class="org.springframework.amqp.rabbit.logback.AmqpAppender">
 		<layout>
-			<pattern>
-				{
-				"time": "%date{ISO8601}",
-				"thread": "%thread",
-				"level": "%level",
-				"class": "%logger{60}",
-				"message": "%msg"
-				}
-			</pattern>
+			<pattern>{"time":"%d{yyyy-MM-dd HH:mm:ss.SSS}","application":"${APP_NAME}","TraceId":"%X{X-B3-TraceId:-}","SpanId":"%X{X-B3-SpanId:-}","Span":"%X{X-Span-Export:-}","thread": "%thread","level": "%level","class": "%logger{50}","message": "%msg"}</pattern>
 		</layout>
 		<host>192.168.5.29</host>
 		<port>5672</port>
