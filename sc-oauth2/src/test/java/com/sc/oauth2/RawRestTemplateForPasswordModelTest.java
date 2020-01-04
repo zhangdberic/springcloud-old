@@ -1,5 +1,6 @@
 package com.sc.oauth2;
 
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -15,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import z1.util.coder.Base64Coder;
+
 
 /**
  * 原生的RestTemplate客户端，测试密码模式，所有的协议都需要自己实现,
@@ -50,10 +51,9 @@ public class RawRestTemplateForPasswordModelTest {
 		paramsMap.set("username", OauthClientTestConfig.OAUTH_USERNAME);
 		paramsMap.set("password", OauthClientTestConfig.OAUTH_PASSWORD);
 		paramsMap.set("scope", OauthClientTestConfig.OAUTH_CLIENT_SERVICE_SCOPE);
-
 		// 构造头部信息(若有需要)
 		HttpHeaders headers = new HttpHeaders();
-		headers.add("Authorization", "Basic " + new Base64Coder().encode(
+		headers.add("Authorization", "Basic " +Base64.getEncoder().encodeToString(
 				(OauthClientTestConfig.OAUTH_CLIENT_ID + ":" + OauthClientTestConfig.OAUTH_CLIENT_SECRET).getBytes()));
 		// 设置类型 "application/json;charset=UTF-8"
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -84,7 +84,7 @@ public class RawRestTemplateForPasswordModelTest {
 
 		// 构造头部信息(若有需要)
 		HttpHeaders headers = new HttpHeaders();
-		headers.add("Authorization", "Basic " + new Base64Coder().encode(
+		headers.add("Authorization", "Basic " +Base64.getEncoder().encodeToString(
 				(OauthClientTestConfig.OAUTH_CLIENT_ID + ":" + OauthClientTestConfig.OAUTH_CLIENT_SECRET).getBytes()));
 		// 设置类型 "application/json;charset=UTF-8"
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

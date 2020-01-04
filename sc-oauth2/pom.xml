@@ -89,19 +89,6 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- z1工具包 -->
-		<dependency>
-			<groupId>com.free</groupId>
-			<artifactId>z1</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		<!-- nifiesi公共包 -->
-		<dependency>
-			<groupId>com.dongyuit</groupId>
-			<artifactId>nfiesi-common</artifactId>
-			<version>1.0.1</version>
-		</dependency>
-		
 		<!-- oauth2 -->	
 		<dependency>
             <groupId>org.springframework.boot</groupId>
@@ -116,7 +103,6 @@
 			<artifactId>ojdbc6</artifactId>
 			<version>11.2.0.4.181016</version>
 		</dependency>         
-
 
 	</dependencies>
 
