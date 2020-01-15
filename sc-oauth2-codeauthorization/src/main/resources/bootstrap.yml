@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: sc-oauth2-codeauthorization
+  profiles:
+    active: dev
+encrypt:
+  key: it7CegZs-xxRfYpU  # 解密配置属性的秘钥(同配置服务器端秘钥)
+# 开发环境        
+---
+spring:
+  profiles: dev
+  cloud:
+    config:
+      uri: http://192.168.5.78:8080
+      profile: dev  # 指定从config server配置的git上拉取的文件(例如:sc-sampleservice-dev.yml)
+      username: sc-config   # config server的basic认证的user
+      password: veDSJeUX-JSxkWrk # config server的basic认证的password
