@@ -66,3 +66,24 @@ security:
       login-path: /login      
 ```
 
+
+
+作用：客户端认证，客户端认证成功后，其会跳转到oauth server的登录页(/login)。
+
+例如：
+
+http://localhost:6001/oauth/authorize?client_id=test_client&redirect_uri=http://localhost:6002/login&response_type=code&scope=web&state=dj43AZ
+
+client_id 请求客户端id
+
+redirect_url 回调应用的url
+
+response_type 响应类型，固定为code
+
+scope 客户端范围
+
+state 状态码，请求时自定义一个随机码，用户登录成功后，重定向到redirect_uri时，会带上这个参数，为了安全。
+
+例如：登录成功后(用户名和密码输入正确后)，回调的URL如下：
+
+http://localhost:6002/login?code=NNYMgO&state=dj43AZ

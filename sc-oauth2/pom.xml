@@ -89,7 +89,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- oauth2 -->	
+		<!-- oauth2 jdbc redis -->	
 		<dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
