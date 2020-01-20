@@ -40,7 +40,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 		// 但由于/oauth/**相关的请求安全规则配置由系统默认生成,则无需再配置。
 		//
 		// @formatter:off
-		http.authorizeRequests().antMatchers("/login","/logout").permitAll().and().formLogin().permitAll();
+		http.authorizeRequests().antMatchers("/login").permitAll().and().formLogin().permitAll().
+		and().authorizeRequests().anyRequest().authenticated();
 		// @formatter:on
 
 	}

@@ -4,7 +4,9 @@
 
 oauth2的理论网上很多，你可以baidu一下。这里不多说了。
 
-## 2.oauth2配置
+https://www.cnblogs.com/sky-chen/archive/2019/03/13/10523882.html
+
+## 2.oauth2 server 配置
 
 当前的代码例子，实现了基于jdbc存储client_details、user、authority等静态数据，基于redis存放token。
 
@@ -218,7 +220,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 		// 但由于/oauth/**相关的请求安全规则配置由系统默认生成,则无需再配置。
 		//
 		// @formatter:off
-		http.authorizeRequests().antMatchers("/login","/logout").permitAll().and().formLogin().permitAll();
+http.authorizeRequests().antMatchers("/login").permitAll().and().formLogin().permitAll().
+		and().authorizeRequests().anyRequest().authenticated();
 		// @formatter:on
 	}
 	
@@ -284,7 +287,7 @@ alter table OAUTH_CLIENT_DETAILS
 
 如果资源服务器(ResourceServerConfiguration)上配置了resourceId，而你的客户端OAUTH_CLIENT_DETAILS.resource_ids字段没有设置相关的值，则无权访问这个资源服务器。
 
-**client_secret** 客户端秘钥，为了安全起见，应该是一个加密值。其对于如下配置的加密器：
+**client_secret** 客户端秘钥，为了安全起见，应该是一个加密值。其对应如下配置的加密器：
 
 这是类AuthorizationServerConfiguration内的一个方法，其设置了client的加密器，其会对http请求的client_secret加密，然后和数据库上的这个字段进行比较。
 
@@ -299,7 +302,7 @@ alter table OAUTH_CLIENT_DETAILS
 
 **authorized_grant_types**  允许的授权模式(例如：password,authorization_code,implicit,client_credentials,refresh_token)，除了refresh_token是特殊模式外，其它的是oauth2常用的四种模式。
 
-**web_server_redirect_uri** 在code_authorization模式下的登录成功后，应用回调url，必须和/oauth/authorize请求的请求参数redirect_uri相同，一般为http://应用ip:应用port/login，例如：http://192.168.5.32:6002/login。
+**web_server_redirect_uri** 在code_authorization模式下的登录成功后，应用回调url，必须和/oauth/authorize请求的请求参数redirect_uri相同，一般为http://应用ip:应用port/login，例如：http://192.168.5.32:6002/login，客户端可以通过修改security.oauth2.login-path=/login来配置回调URL。
 
 **authorities** 客户端授权，只要在implicit,client_credentials模式下才有意义，因为在password和authorization_code模式下使用的user的授权。
 
@@ -383,7 +386,7 @@ http://www.andaily.com/spring-oauth-server/db_table_description.html
 
 作用：获取访问令牌。
 
-**密码模式授权(password model)：**
+#### 密码模式授权(password model)
 
 请求URL：/oauth2/token
 
@@ -410,7 +413,7 @@ Authorization Basic client_id:client_secret
 返回值：
 
 ```json
-{"access_token":"ca365461-23a5-4abb-b7d6-7f29d46976be","token_type":"bearer","refresh_token":"06909beb-b5a1-47f8-b147-ff3c4bb52aae","expires_in":43199,"scope":"service"}
+{"access_token":"4102a767-eb9f-4ed0-9d6a-1eb1c2e2f21e","token_type":"bearer","refresh_token":"f79e79b9-9243-4ea0-93de-f6f0b91773fe","expires_in":43199,"scope":"service"}
 ```
 
 access_token 返回的访问令牌。
@@ -423,17 +426,29 @@ expires_in 过期时间。
 
 scope 范围，一般对于请求范围，例如：请求scope=service，返回的也是service。
 
+#### 令牌刷新(refresh token)
+
+用于access_token快要到期，不需要重新认证，使用refresh_token就可以获取新的令牌。有时候会为了安全考虑禁用令牌刷新，因为黑客一旦获取到了refresh_token就可以无限刷新access_token，而且默认refresh_token的有效期为30天。
+
+请求URL：/oauth2/token?grant_type=refresh_token&refresh_token=${refresh_token}&client_id=${client_id}&client_secret=${client_secret}
+
+请求方法：GET
+
+返回值：
+
+```json
+{"access_token":"77c841b8-51aa-4be5-af1c-e872fd1cafbc","token_type":"bearer","refresh_token":"f79e79b9-9243-4ea0-93de-f6f0b91773fe","expires_in":43199,"scope":"service"}
+```
+
+注意：AuthorizationServerConfiguration类的tokenServices.setSupportRefreshToken(true或false)，可以设置是否支持令牌刷新。
+
 ### /oauth2/check_token
 
 作用：检查token是否合法。
 
-请求URL：/oauth2/check_token
+请求URL：/oauth2/check_token?token={access_token}
 
 请求方法：GET
-
-请求Content：application/x-www-form-urlencoded
-
-请求参数：token={access_token}
 
 请求头：
 
@@ -456,6 +471,8 @@ authorities 授权列表
 client_id 客户端id
 
 scope 返回列表
+
+注意：AuthorizationServerConfiguration类security.checkTokenAccess("isAuthenticated()");可以设置/oauth2/check_token的访问授权，默认是denyAll()，也就是不允许访问。
 
 ### /oauth2/token_key
 
