@@ -493,3 +493,9 @@ code_authorization认证模式，使用的URL，用户确认URL。
 ### /oauth/error
 
 作用：oauth2的错误处理URL。
+
+
+
+## 5.oauth2 HttpSecurity规则
+
+待以后说明...
