@@ -274,6 +274,46 @@ public class PreRequestLogFilter extends ZuulFilter {
 }
 ```
 
+#### 2.4.3 伟大的RequestContext
+
+zuul过滤器中最关键的技术就是RequestContext，其实一个上下文对象，包含zuul使用的几乎所有技术。下面说几个重点的：
+
+1.其继承了ConcurrentHashMap对象，实现了Map所有的接口。
+
+2.基于线程变量ThreadLocal来存储当前实例。
+
+3.request和response都被存放到当前的map中，因此你可以在代码的任何位置来操作request和response。
+
+4.setThrowable(Throwable th)代表zuul执行的过程中出现了异常，如果你的ZuulFilter在执行的过程中抛出了异常，zuul会自动调用这个方法添加异常对象到上下文中，你可以手工赋值（表示出现了异常）。你可以编写一个ErrorFilter来处理异常，这需要使用getThrowable()的方法来获取异常，如果异常处理完了，则一定要调用remove("throwable")来删除这个异常，表示已经没有异常了，否则异常会被传递下去。
+
+5.任何响应的输出，不要直接使用response提供的方法来操作（RequestContext.currentContext().getResponse().xxx())，应该使用RequestContext提供的方法来设置response相关数据，例如：添加响应头RequestContext.currentContext().addZuulRequestHeader("code","ok");你调用任何RequestContext上的操作response的相关方法，SendResponseFilter过滤器(zuul原生)都会帮你输出。例如：setResponseBody(String)、setResponseDataStream(InputStream)、addZuulResponseHeader(String, String)、setOriginContentLength(Long)等。
+
+6.setRouteHost(new URL("http:/xxx"))，这个类似于nginx的proxyPass ip地址，请求会被zuul转发到这个地址。
+
+7.SERVICE_ID_KEY，zuul提供了一个关键字就是SERVICE_ID_KEY，设置这个值会改变请求的服务，例如：RequestContext.getCurrentContext().put(FilterConstants.SERVICE_ID_KEY, "myservices");，这里的服务可以是eureka上的服务、在配置文件zuul.route声明的手工服务等，你可以通过编程的方式来改变请求的服务。例如：手工指定服务，
+
+```yaml
+zuul:
+  routes:
+    tgms-service:
+      path: /services
+      serviceId: myservices
+myservices:
+  ribbon:
+    NIWSServerListClassName: com.netflix.loadbalancer.ConfigurationBasedServerList
+    listOfServers: 121.42.175.3:80,121.42.175.4:81       
+```
+
+8.REQUEST_URI_KEY，改变转发请求的uri，例如：RequestContext.getCurrentContext().put(FilterConstants.REQUEST_URI_KEY,"/tgms-services")，例如：你浏览器的请求地址为http://localhost:5000/services，则经过本代码转发到upstream的请求url已经是/tgms-services，不再是/services了。
+
+
+
+
+
+
+
+
+
 
 
 ### 2.4 Zuul容错和回退
