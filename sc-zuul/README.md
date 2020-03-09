@@ -306,9 +306,26 @@ myservices:
 
 8.REQUEST_URI_KEY，改变转发请求的uri，例如：RequestContext.getCurrentContext().put(FilterConstants.REQUEST_URI_KEY,"/tgms-services")，例如：你浏览器的请求地址为http://localhost:5000/services，则经过本代码转发到upstream的请求url已经是/tgms-services，不再是/services了。
 
+#### 2.4.4 FilterConstants
 
+zuul的关键字和内置过滤器执行顺序都在这个常量类中定义。看这个常量，你能有收获。
 
+#### 2.4.5 ZuulFilter.filterOrder()
 
+```java
+	@Override
+	public String filterType() {
+		return FilterConstants.PRE_TYPE;
+	}
+    @Override
+	public int filterOrder() {
+		return 1;
+	}
+```
+
+zuul根据这个值来决定过滤器执行的先后顺序，同一种filterType类型的两个ZuulFilter的filterOrder()不能相同，但不同种类filterType的filterOrder()可以相同，因为zuul是逐个类型(filterType)执行的。
+
+技巧：因为PRE类型，可用的filterOrder()不多，一般情况下应使用2、3、4，这个可以通过查看FilterConstants常量来理解。如果你需要定义4个PRE类型的过滤器，filterOrder不够用了，这里有个技巧，你可以把两个没有相互依赖关系的ZuulFilter都定义为同一个filterOrder()，例如都定义为3。
 
 
 
