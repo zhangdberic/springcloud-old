@@ -186,7 +186,7 @@ public class HystrixTestApplication {
 
 # 测试hystrix
 
-## 测试超时
+## ~~测试超时~~
 
 根据hystrix的默认配置，来测试超时。
 
@@ -274,7 +274,7 @@ execution.isolation.thread.timeoutInMilliseconds=1000(默认值)
 
 
 
-### 测试hystrix的断路器打开（跳闸）、保护机制、回退机制、自我修复
+## 测试hystrix的断路器打开（跳闸）、保护机制、回退机制、自我修复
 
 根据hystrix的默认配置，来测试hystrix的断路器打开（跳闸）、保护机制、回退机制、自我修复。
 
@@ -375,7 +375,7 @@ circuitBreaker.sleepWindowInMilliseconds=5000，跳闸后这个配置时间内�
 
 
 
-### 测试Hystrix的线程上下文变量(ThreadLocal)传递
+## 测试Hystrix的线程上下文变量(ThreadLocal)传递
 
 如果hystrix基于的THREAD模式，则ThreadLocal中的值使用无法传递到@HystrixCommand声明的方法，因为隶属两个不同的线程。
 
@@ -520,7 +520,11 @@ public class HystrixTest3 {
 }
 ```
 
-### 测试hystrix+feign
+## 测试hystrix+ribbon
+
+可以参考zuul文档的 2.8.1 计算ribbonTimeout 和 2.8.2 计算hystrixTimeout 章节。
+
+## 测试hystrix+feign
 
 如果feign要使用hystrix保护，则需要加入配置（默认feign不受hystrix保护）：
 
@@ -647,7 +651,7 @@ URL请求http://localhost:8300/user1/1?sleep=xxx，会触发HystrixTest1Controll
 
 发送请求，http://localhost:8300/user1/1?sleep=1800，报错或返回回退的User信息。证明单独的hystrix+feign某个方法调用超时配置有效，但系统的默认超时时间还是1000ms，也就是没有单独配置的方法受到默认值的控制。
 
-### Hystrix监控
+## Hystrix监控
 
 如果项目加入spring-boot-starter-actuator，就可以监控hystrix的运行情况，使用如下的URL持续监控(默认每隔500ms刷新一次)。
 

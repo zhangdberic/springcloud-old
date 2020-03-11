@@ -294,6 +294,8 @@ sc-sampleservice:
     ConnectTimeout: 1000
 ```
 
+**这个的ReadTimeout设置为3000，时间的ribbonTimeout经过系统计算后是8000，你可以通过查看，zuul的文档，2.8.1 计算ribbonTimeout 章节，来能明白这个8000是如果计算来的额。**
+
 **重试关闭**的情况下：
 
 com.netflix.client.ClientException; nested exception is java.io.IOException: com.netflix.client.ClientException 

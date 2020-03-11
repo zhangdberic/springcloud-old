@@ -482,16 +482,25 @@ hystrix:
 
 在基于zuul+hystrix+ribbon组合情况下设置读取超时时间(ReadTimeout)相对复杂一些，其需要先预估一个服务调用允许的超时时间，然后根据这个预估的参考值来计算相关属性值。
 
-如下配置的**默认值**如下：
+~~默认配置如下（配置文件中无超时相关配置）：~~
 
 ```properties
-ribbon.restclient.enabled=false // 注意false的情况不支持读取超时时间设置
+ribbon.restclient.enabled=false
 hystrix.command.<ServiceId>.execution.isolation.thread.timeoutInMilliseconds=4000
 <ServiceId>.ribbon.ConnectTimeout=1000
 <ServiceId>.ribbon.ReadTimeout=1000
 ```
 
-设置某个服务的读取超时时间，要同时设置如下几个值：
+设置全局的超时时间，要同时设置如下几个值：
+
+```properties
+ribbon.restclient.enabled=true
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=xxxxx
+ribbon.ConnectTimeout=xxxxx
+ribbon.ReadTimeout=xxxxx
+```
+
+设置某个服务的超时时间，要同时设置如下几个值：
 
 ```properties
 ribbon.restclient.enabled=true
@@ -500,45 +509,111 @@ hystrix.command.<ServiceId>.execution.isolation.thread.timeoutInMilliseconds=xxx
 <ServiceId>.ribbon.ReadTimeout=xxxxx
 ```
 
-#### 例如：设置读取超时时间为10000ms
+#### 2.8.1 计算ribbonTimeout
 
-例如：我预估上传服务允许的超时时间为10000ms(10s)，那么我首先要设置：
+**公式如下：**
 
-```properties
-<ServiceId>.ribbon.ConnectTimeout=1000
-<ServiceId>.ribbon.ReadTimeout=10000
+```java
+ribbonTimeout = (ribbonReadTimeout + ribbonConnectTimeout) * (maxAutoRetries + 1) * (maxAutoRetriesNextServer + 1);
 ```
 
-然后，根据公式计算hystrix的timeoutInMilliseconds时间，这个公式可以查看：org.springframework.cloud.netflix.zuul.filters.route.support.AbstractRibbonCommand#getRibbonTimeout(IClientConfig config, String commandKey)方法，源码。
+**来源于：**org.springframework.cloud.netflix.zuul.filters.route.support.AbstractRibbonCommand.getRibbonTimeout()
 
-**公式：timeoutInMilliseconds= (ribbonReadTimeout + ribbonConnectTimeout) * (maxAutoRetries + 1) * (maxAutoRetriesNextServer + 1);**
+例如：如下是你的配置；
 
-默认情况下：maxAutoRetries = 0，maxAutoRetriesNextServer = 1，因此计算出hystrix的**timeoutInMilliseconds=22000**
+```properties
+ribbon.ConnectTimeout=1000
+ribbon.ReadTimeout=10000
+```
 
-测试通过的application.yml配置如下：
+套用上面的公式计算（默认值：maxAutoRetries = 0，maxAutoRetriesNextServer = 1）：
+
+(10000 + 1000) * (0 + 1) * (1 + 1) = 22000；
+
+也就说，你配置的ReadTimeout为10000，而实际上系统计算出的ribbonTimeout为22000；因此应根据公式，反推算出一个ribbon.ReadTimeout；
+
+计算ribbonTimeout的java代码：
+
+```java
+	protected static int getRibbonTimeout(IClientConfig config, String commandKey) {
+		int ribbonTimeout;
+		if (config == null) {
+			ribbonTimeout = RibbonClientConfiguration.DEFAULT_READ_TIMEOUT + RibbonClientConfiguration.DEFAULT_CONNECT_TIMEOUT;
+		} else {
+			int ribbonReadTimeout = getTimeout(config, commandKey, "ReadTimeout",
+				IClientConfigKey.Keys.ReadTimeout, RibbonClientConfiguration.DEFAULT_READ_TIMEOUT);
+			int ribbonConnectTimeout = getTimeout(config, commandKey, "ConnectTimeout",
+				IClientConfigKey.Keys.ConnectTimeout, RibbonClientConfiguration.DEFAULT_CONNECT_TIMEOUT);
+			int maxAutoRetries = getTimeout(config, commandKey, "MaxAutoRetries",
+				IClientConfigKey.Keys.MaxAutoRetries, DefaultClientConfigImpl.DEFAULT_MAX_AUTO_RETRIES);
+			int maxAutoRetriesNextServer = getTimeout(config, commandKey, "MaxAutoRetriesNextServer",
+				IClientConfigKey.Keys.MaxAutoRetriesNextServer, DefaultClientConfigImpl.DEFAULT_MAX_AUTO_RETRIES_NEXT_SERVER);
+			ribbonTimeout = (ribbonReadTimeout + ribbonConnectTimeout) * (maxAutoRetries + 1) * (maxAutoRetriesNextServer + 1);
+		}
+		return ribbonTimeout;
+	}
+```
+
+#### 2.8.2 计算hystrixTimeout
+
+如果没有在配置文件中设置timeoutInMilliseconds，则使用ribbonTimeout作为hystrixTimeout，否则使用配置文件中的timeoutInMilliseconds作为hystrixTimeout。
+
+**来源于：**
+
+org.springframework.cloud.netflix.zuul.filters.route.support.AbstractRibbonCommand.getHystrixTimeout()
+
+例如：如下是你的配置；
 
 ```yaml
-ribbon: 
-  restclient:  
-    enabled: true
-# 设置hystrix    
-hystrix: 
+hystrix:
   command:
-    sc-sampleservice:
+    default:
       execution:
         isolation:
           thread:
-            timeoutInMilliseconds: 22000     
-# 为某个服务单独设置ribbon      
-sc-sampleservice:
-  ribbon:
-    ReadTimeout: 10000
-    ConnectTimeout: 1000    
+            timeoutInMilliseconds: 22000
 ```
 
-测试验证：http://192.168.5.31:8090/api/sampleservice/1?sleep=9500，正常返回。
+计算hystrixTimeout的java代码：
 
-http://192.168.5.31:8090/api/sampleservice/1?sleep=11000，回退返回。
+```java
+	protected static int getHystrixTimeout(IClientConfig config, String commandKey) {
+		int ribbonTimeout = getRibbonTimeout(config, commandKey);
+		DynamicPropertyFactory dynamicPropertyFactory = DynamicPropertyFactory.getInstance();
+		int defaultHystrixTimeout = dynamicPropertyFactory.getIntProperty("hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds",
+			0).get();
+		int commandHystrixTimeout = dynamicPropertyFactory.getIntProperty("hystrix.command." + commandKey + ".execution.isolation.thread.timeoutInMilliseconds",
+			0).get();
+		int hystrixTimeout;
+		if(commandHystrixTimeout > 0) {
+			hystrixTimeout = commandHystrixTimeout;
+		}
+		else if(defaultHystrixTimeout > 0) {
+			hystrixTimeout = defaultHystrixTimeout;
+		} else {
+			hystrixTimeout = ribbonTimeout;
+		}
+		if(hystrixTimeout < ribbonTimeout) {
+			LOGGER.warn("The Hystrix timeout of " + hystrixTimeout + "ms for the command " + commandKey +
+				" is set lower than the combination of the Ribbon read and connect timeout, " + ribbonTimeout + "ms.");
+		}
+		return hystrixTimeout;
+	}
+```
+
+#### 2.8.3 ribbonTimeout和hystrixTimeout的关系
+
+ribbonTImeout用于ribbon底层http client的socket的timeout，也就说用于网络的读取超时。
+
+hystrixTimeout用于方法执行时间超时，理解为：future.get(hystrixTimeout)。
+
+两者之间是在功能上是有区别。
+
+例如：
+
+ribbonTimeout超时报错：Caused by: java.net.SocketTimeoutException: Read timed out
+
+hystrixTimeout超时报错：Caused by: com.netflix.hystrix.exception.HystrixRuntimeException: dfss-upload timed-out and no fallback available.
 
 
 
