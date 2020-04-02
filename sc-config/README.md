@@ -38,7 +38,7 @@ spring:
         encrypt:
           enabled: false # 直接返回密文，而并非解密后的原文(需要客户端解密)
 encrypt:
-  key: it7CegZs-xxRfYpU # 配置文件加密秘钥
+  key: xxx # 配置文件加密秘钥
 ```
 
 ### 1.3 application.yml
@@ -55,7 +55,7 @@ security:
     enabled: true
   user:
     name: sc-config
-    password: veDSJeUX-JSxkWrk
+    password: xxxxxxxxxxxxxxxxxxx
          
 # 开发环境    
 ---
@@ -72,7 +72,7 @@ spring:
           search-paths: /**
           # 因为github的账户和密码不能泄露,因此需要在启动脚本中加入--spring.cloud.config.server.git.username=xxxx --spring.cloud.config.server.git.password=xxxx 
           username: zhangdb
-          password: 12345678
+          password: 12345678xx
   # 和spring-cloud-starter-bus-amqp配合,用于/bus/refresh分布式服务属性刷新.
   # 调用/bus/refresh,则刷新所有监听到本队列上的服务属性配置.
   # 调用/bus/refresh?destination={application}:**,则刷新监听到本队列上的某个服务(应用)属性配置.
@@ -82,7 +82,7 @@ spring:
     host: 192.168.5.29
     port: 5672
     username: admin
-    password: Rabbitmq-401             
+    password: xxxxxx            
 ```
 
 ### 1.4 ConfigServerApplication
@@ -129,7 +129,7 @@ spring:
   profiles:
     active: dev
 encrypt:
-  key: it7CegZs-xxRfYpU  # 解密配置属性的秘钥(同配置服务器端秘钥)
+  key: xxxxxx  # 解密配置属性的秘钥(同配置服务器端秘钥)
 # 开发环境        
 ---
 spring:
@@ -139,7 +139,7 @@ spring:
       uri: http://192.168.5.78:8080
       profile: dev  # 指定从config server配置的git上拉取的文件(例如:sc-sample1service-dev.yml)
       username: sc-config   # config server的basic认证的user
-      password: veDSJeUX-JSxkWrk # config server的basic认证的password    
+      password: xxxxrk # config server的basic认证的password    
 ```
 
 注意：如果基于spring cloud config模式来定义服务的配置，那么就应该只创建bootstrap.yml，而application.yml应该放在config上，例如方在git上。而bootstrap.yml文件只应该包含上面例子中的内容：应用名、profile、config客户端配置等，不应在包含过多的配置，其它的配置都应该放在config的application.yml上。
@@ -245,7 +245,7 @@ config服务器端和config客户端的bootstrap.yml的配置文中都要加入�
 
 ```yaml
 encrypt:
-  key: it7CegZs-xxRfYpU  # 解密配置属性的秘钥(同配置服务器端秘钥)
+  key: xxxxU  # 解密配置属性的秘钥(同配置服务器端秘钥)
 ```
 
 #### 2.3.2 使用config服务器提供的/encypt加密值
